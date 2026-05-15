@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Roofing Proposal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      min-height: 100vh;
+      color: #111;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #1d4ed8;
+      padding: 14px 16px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header h1 { color: white; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+    .header p  { color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 2px; }
+
+    /* Progress */
+    .progress-bar { display: flex; background: #1e3a8a; padding: 7px 16px 8px; gap: 6px; }
+    .seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.25); transition: background .3s; }
+    .seg.done   { background: #86efac; }
+    .seg.active { background: white; }
+
+    /* Screens */
+    .screen { display: none; padding-bottom: 100px; }
+    .screen.active { display: block; }
+
+    /* Cards */
+    .content { padding: 12px; }
+    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #9ca3af; margin-bottom: 12px; }
+
+    /* Fields */
+    .field { margin-bottom: 11px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    input[type=text], input[type=tel], input[type=email], input[type=number], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 9px;
+      font-size: 15px; color: #111; background: #f9fafb;
+      -webkit-appearance: none; appearance: none; transition: border-color .15s, background .15s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #1d4ed8; background: white; }
+    textarea { resize: vertical; min-height: 72px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 5px; }
+    .chip { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #e5e7eb; background: #f9fafb;
+      font-size: 13px; font-weight: 500; color: #374151; cursor: pointer; user-select: none; transition: all .15s; }
+    .chip.sel { background: #1d4ed8; color: white; border-color: #1d4ed8; }
+
+    /* Line items */
+    .cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #9ca3af; padding: 10px 14px 5px; }
+    .line-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid #f3f4f6; cursor: pointer; }
+    .line-item:last-child { border-bottom: none; }
+    .li-box { width: 22px; height: 22px; border: 2px solid #d1d5db; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .li-box.chk { background: #1d4ed8; border-color: #1d4ed8; }
+    .li-box.chk::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+    .li-info { flex: 1; min-width: 0; }
+    .li-name { font-size: 14px; font-weight: 500; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .li-unit { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+    .li-price { font-size: 14px; font-weight: 700; color: #374151; white-space: nowrap; }
+    .li-price.free { color: #9ca3af; font-weight: 500; font-size: 12px; }
+
+    /* Total bar */
+    .total-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a;
+      padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+      z-index: 50; box-shadow: 0 -2px 12px rgba(0,0,0,0.15); }
+    .total-label { color: rgba(255,255,255,0.65); font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .total-amt { color: white; font-size: 24px; font-weight: 800; }
+
+    /* Buttons */
+    .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 11px;
+      font-size: 15px; font-weight: 700; cursor: pointer; text-align: center; transition: opacity .15s, transform .1s; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary   { background: #1d4ed8; color: white; }
+    .btn-success   { background: #16a34a; color: white; }
+    .btn-secondary { background: white; color: #374151; border: 1.5px solid #e5e7eb; }
+    .btn-wrap { padding: 0 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* Preview */
+    .pre-client { margin-bottom: 12px; }
+    .pre-client strong { font-size: 16px; display: block; }
+    .pre-client span { font-size: 13px; color: #6b7280; }
+    .pre-line { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; font-size: 13px; border-bottom: 1px solid #f3f4f6; gap: 8px; }
+    .pre-line:last-child { border-bottom: none; }
+    .pre-line .nm { flex: 1; color: #374151; }
+    .pre-line .pr { font-weight: 700; color: #111; white-space: nowrap; }
+    .pre-total { display: flex; justify-content: space-between; padding: 12px 0 0; margin-top: 4px; border-top: 2px solid #111; font-size: 18px; font-weight: 800; }
+    .pre-total .amt { color: #1d4ed8; }
+
+    /* Confirmation */
+    .done-hero { text-align: center; padding: 36px 20px 20px; }
+    .done-hero .icon { font-size: 56px; display: block; margin-bottom: 12px; }
+    .done-hero h2 { font-size: 22px; font-weight: 800; color: #16a34a; }
+    .done-hero p  { font-size: 14px; color: #6b7280; margin-top: 6px; line-height: 1.5; }
+    .status-list { margin: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .status-item { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border-radius: 10px; font-size: 13px; font-weight: 500; }
+    .status-item.ok      { background: #f0fdf4; color: #166534; }
+    .status-item.pending { background: #fffbeb; color: #92400e; }
+
+    /* Loading */
+    .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; padding: 40px 20px; text-align: center; }
+    .spinner { width: 42px; height: 42px; border: 3px solid #e5e7eb; border-top-color: #1d4ed8; border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading h3 { font-size: 17px; color: #374151; }
+    .loading p  { font-size: 13px; color: #9ca3af; margin-top: 5px; }
+
+    .error-box { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; font-size: 13px; color: #dc2626; margin: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="appTitle">🏠 Roofing Proposal</h1>
+  <p id="appSub">New Job</p>
+</div>
+<div class="progress-bar">
+  <div class="seg active" id="seg0"></div>
+  <div class="seg"        id="seg1"></div>
+  <div class="seg"        id="seg2"></div>
+</div>
+
+<!-- ── Screen 0: Client + Roof Info ── -->
+<div class="screen active" id="s0">
+  <div class="content">
+    <div class="card">
+      <div class="card-title">Client Details</div>
+      <div class="field"><label>Full Name *</label><input type="text" id="clientName" placeholder="First Last" autocomplete="name"></div>
+      <div class="field"><label>Job Site Address *</label><input type="text" id="clientAddress" placeholder="123 Main St, City, CA 9XXXX"></div>
+      <div class="row2">
+        <div class="field"><label>Phone</label><input type="tel"   id="clientPhone" placeholder="(555) 000-0000" autocomplete="tel"></div>
+        <div class="field"><label>Email</label><input type="email" id="clientEmail" placeholder="client@email.com" autocomplete="email"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Roof Details</div>
+      <div class="field">
+        <label>Roof Type</label>
+        <div class="chips" id="roofChips"><!-- populated from CONFIG --></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Square Footage</label><input type="number" id="sqft" placeholder="e.g. 2000" inputmode="numeric"></div>
+        <div class="field"><label>Warranty</label><select id="warranty"><!-- populated from CONFIG --></select></div>
+      </div>
+      <div class="field"><label>Color Choice (if known)</label><input type="text" id="colorChoice" placeholder="e.g. Charcoal, Terra Cotta…"></div>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-primary" onclick="goToScope()">Continue → Select Scope</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Screen 1: Line Item Selection ── -->
+<div class="screen" id="s1">
+  <div id="catalogArea">
+    <div class="loading">
+      <div class="spinner"></div>
+      <h3>Loading catalog…</h3>
+      <p>Fetching prices from Google Sheets</p>
+    </div>
+  </div>
+
+  <div class="btn-wrap" style="padding-top:72px;">
+    <div class="field">
+      <label>Additional Notes</label>
+      <textarea id="notes" placeholder="Special conditions, access issues, customer notes…"></textarea>
+    </div>
+    <button class="btn btn-primary"   onclick="goToPreview()">Preview Proposal →</button>
+    <button class="btn btn-secondary" onclick="goTo(0)">← Back</button>
+  </div>
+</div>
+
+<!-- ── Screen 2: Preview ── -->
+<div class="screen" id="s2">
+  <div class="content">
+    <div class="card">
+      <div class="card-title">Proposal Preview</div>
+      <div id="previewContent"></div>
+    </div>
+    <button class="btn btn-success"   onclick="submitJob()">📧 Generate &amp; Send Proposal</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="goTo(1)">← Edit Scope</button>
+  </div>
+</div>
+
+<!-- ── Screen 3: Submitting ── -->
+<div class="screen" id="s3">
+  <div class="loading">
+    <div class="spinner"></div>
+    <h3>Creating Proposal…</h3>
+    <p>Generating PDF · Logging job · Sending email</p>
+  </div>
+</div>
+
+<!-- ── Screen 4: Done ── -->
+<div class="screen" id="s4">
+  <div class="done-hero">
+    <span class="icon">🎉</span>
+    <h2>Proposal Sent!</h2>
+    <p id="doneMsg">The proposal has been saved to Drive and emailed to the client.</p>
+  </div>
+  <div class="status-list">
+    <div class="status-item ok">✅ &nbsp;Job logged to Google Sheets</div>
+    <div class="status-item ok">✅ &nbsp;PDF saved to Google Drive</div>
+    <div class="status-item ok" id="emailStatus">✅ &nbsp;Email sent to client</div>
+    <div class="status-item pending">⏳ &nbsp;Next: right-click PDF in Drive → Send with DocuSign</div>
+    <div class="status-item pending">⏳ &nbsp;Invoice generated after signing (from Sheets menu)</div>
+  </div>
+  <div class="btn-wrap">
+    <a id="driveLink" href="#" target="_blank" style="display:block">
+      <button class="btn btn-primary" style="width:100%">📂 Open Proposal in Drive</button>
+    </a>
+    <button class="btn btn-secondary" onclick="resetForm()">+ Start New Job</button>
+  </div>
+</div>
+
+<!-- Sticky total bar — only visible on scope screen -->
+<div class="total-bar" id="totalBar" style="display:none">
+  <div><div class="total-label">Estimated Total</div></div>
+  <div class="total-amt" id="totalDisplay">$0</div>
+</div>
+
+<script>
+// ── Config injected by GAS at render time ──────────────────
+const APP = JSON.parse('<?= config ?>');
+const GAS_URL = APP.gasUrl;
+
+// ── State ──────────────────────────────────────────────────
+const state = {
+  roofType:      '',
+  catalog:       [],
+  selected:      new Set(),   // set of item IDs checked
+  prices:        {},          // id → price
+  total:         0,
+  catalogLoaded: false,
+};
+
+// ── Boot: apply branding & populate form controls ──────────
+(function init() {
+  document.getElementById('appTitle').textContent = '🏠 ' + APP.companyName;
+  document.title = APP.companyName;
+
+  // Roof type chips
+  const chipContainer = document.getElementById('roofChips');
+  APP.roofTypes.forEach(rt => {
+    const d = document.createElement('div');
+    d.className = 'chip';
+    d.textContent = rt;
+    d.onclick = () => selectChip(d);
+    chipContainer.appendChild(d);
+  });
+
+  // Warranty options
+  const sel = document.getElementById('warranty');
+  APP.warrantyOptions.forEach(w => {
+    const o = document.createElement('option');
+    o.value = o.textContent = w;
+    if (w === APP.defaultWarranty) o.selected = true;
+    sel.appendChild(o);
+  });
+})();
+
+// ── Navigation ─────────────────────────────────────────────
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s' + n).classList.add('active');
+  ['seg0','seg1','seg2'].forEach((id, i) => {
+    document.getElementById(id).className =
+      'seg' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+  document.getElementById('totalBar').style.display = (n === 1) ? 'flex' : 'none';
+  const subs = ['New Job', 'Select Scope', 'Preview', 'Working…', 'Done ✓'];
+  document.getElementById('appSub').textContent = subs[n] || '';
+  window.scrollTo(0, 0);
+}
+
+function selectChip(el) {
+  el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  state.roofType = el.textContent.trim();
+}
+
+// ── Screen 0 → 1 ──────────────────────────────────────────
+function goToScope() {
+  if (!v('clientName'))    { alert('Please enter the client name.');    return; }
+  if (!v('clientAddress')) { alert('Please enter the job site address.'); return; }
+  goTo(1);
+  loadCatalog();
+}
+
+// ── Catalog ────────────────────────────────────────────────
+function loadCatalog() {
+  if (state.catalogLoaded) return;
+
+  fetch(GAS_URL + '?action=catalog')
+    .then(r => r.json())
+    .then(data => {
+      state.catalog = data.items;
+      renderCatalog(data.items);
+      state.catalogLoaded = true;
+    })
+    .catch(err => {
+      document.getElementById('catalogArea').innerHTML =
+        `<div class="error-box">⚠️ Could not load catalog. Check your connection.<br><small>${err.message}</small></div>`;
+    });
+}
+
+function renderCatalog(items) {
+  const cats = {};
+  items.forEach(item => { (cats[item.category || 'General'] = cats[item.category || 'General'] || []).push(item); });
+
+  let html = '';
+  for (const [cat, catItems] of Object.entries(cats)) {
+    html += `<div class="card" style="padding:0;overflow:hidden;"><div class="cat-label">${cat}</div>`;
+    catItems.forEach(item => {
+      const id = 'i_' + item.item.replace(/\W/g, '_');
+      state.prices[id] = item.price || 0;
+      const priceHtml = item.price
+        ? `<span class="li-price">$${Number(item.price).toLocaleString()}</span>`
+        : `<span class="li-price free">incl.</span>`;
+      html += `
+        <div class="line-item" onclick="toggle('${id}')" data-item='${JSON.stringify(item).replace(/'/g,"&#39;")}'>
+          <div class="li-box" id="${id}"></div>
+          <div class="li-info">
+            <div class="li-name">${item.description}</div>
+            <div class="li-unit">${item.unit || ''}</div>
+          </div>
+          ${priceHtml}
+        </div>`;
+    });
+    html += '</div>';
+  }
+  document.getElementById('catalogArea').innerHTML = html;
+}
+
+function toggle(id) {
+  const box = document.getElementById(id);
+  const p   = state.prices[id] || 0;
+  if (state.selected.has(id)) {
+    state.selected.delete(id);
+    box.classList.remove('chk');
+    state.total -= p;
+  } else {
+    state.selected.add(id);
+    box.classList.add('chk');
+    state.total += p;
+  }
+  document.getElementById('totalDisplay').textContent = '$' + Math.max(0, state.total).toLocaleString();
+}
+
+// ── Preview ────────────────────────────────────────────────
+function selectedItems() {
+  return [...state.selected].map(id => {
+    const el = document.querySelector(`[data-item][onclick="toggle('${id}')"]`);
+    return el ? JSON.parse(el.dataset.item) : null;
+  }).filter(Boolean);
+}
+
+function goToPreview() {
+  if (state.selected.size === 0) { alert('Please select at least one work item.'); return; }
+  const items = selectedItems();
+  const name  = v('clientName'), addr = v('clientAddress');
+  const email = v('clientEmail'), phone = v('clientPhone');
+
+  document.getElementById('previewContent').innerHTML = `
+    <div class="pre-client">
+      <strong>${name}</strong>
+      <span>${addr}${email ? '<br>'+email : ''}${phone ? '<br>'+phone : ''}</span>
+    </div>
+    ${items.map((it, i) => `
+      <div class="pre-line">
+        <span class="nm">${i+1}. ${it.description}</span>
+        <span class="pr">${it.price ? '$'+Number(it.price).toLocaleString() : 'incl.'}</span>
+      </div>`).join('')}
+    <div class="pre-total"><span>Total</span><span class="amt">$${Math.max(0,state.total).toLocaleString()}</span></div>`;
+
+  goTo(2);
+}
+
+// ── Submit ─────────────────────────────────────────────────
+function submitJob() {
+  const payload = {
+    clientName:    v('clientName'),
+    clientAddress: v('clientAddress'),
+    clientPhone:   v('clientPhone'),
+    clientEmail:   v('clientEmail'),
+    roofType:      state.roofType,
+    sqft:          v('sqft'),
+    warranty:      document.getElementById('warranty').value,
+    colorChoice:   v('colorChoice'),
+    notes:         v('notes'),
+    lineItems:     selectedItems(),
+    total:         Math.max(0, state.total),
+  };
+
+  goTo(3);
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'submit_job', payload }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('driveLink').href = data.fileUrl || '#';
+      if (!payload.clientEmail) {
+        const el = document.getElementById('emailStatus');
+        el.textContent = '⚠️  No email provided — share the Drive link manually';
+        el.className = 'status-item pending';
+        document.getElementById('doneMsg').textContent = 'Proposal saved to Drive. Share the link with your client.';
+      }
+      goTo(4);
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+      goTo(2);
+    }
+  })
+  .catch(err => {
+    alert('Connection error. Please try again.\n\n' + err.message);
+    goTo(2);
+  });
+}
+
+// ── Reset ──────────────────────────────────────────────────
+function resetForm() {
+  ['clientName','clientAddress','clientPhone','clientEmail','sqft','colorChoice','notes']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  state.roofType = ''; state.selected.clear(); state.total = 0;
+  state.catalogLoaded = false;
+  document.getElementById('totalDisplay').textContent = '$0';
+  document.getElementById('emailStatus').textContent  = '✅  Email sent to client';
+  document.getElementById('emailStatus').className    = 'status-item ok';
+  goTo(0);
+}
+
+function v(id) { return document.getElementById(id).value.trim(); }
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# clasp auth token (contains your Google OAuth token — never commit)
+.clasprc.json
+
+# Secrets
+.env
+secrets.json
+config.local.js
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+
+# Local dev: Google OAuth token + Drive folder ID (never commit)
+local/.dev-config.json
+
+# App OAuth credentials (developer-side, never commit — see app-credentials.json.example)
+local/app-credentials.json
+local/app-credentials.json
