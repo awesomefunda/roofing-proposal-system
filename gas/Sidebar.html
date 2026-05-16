@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    color: #333;
+    background: #fff;
+  }
+
+  /* ── Views ── */
+  .view { display: none; padding: 16px; }
+  .view.active { display: block; }
+
+  /* ── Header bar ── */
+  .header {
+    background: #0d2240;
+    color: white;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-sub { font-size: 11px; color: #aac4ff; font-weight: 400; }
+
+  /* ── Form elements ── */
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 12px 0 4px;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #333;
+    background: #fff;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #0d2240; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .btn-primary   { background: #2e7d32; color: white; }
+  .btn-secondary { background: #0d2240; color: white; }
+  .btn-outline   { background: white; color: #0d2240; border: 1.5px solid #0d2240; margin-top: 6px; }
+  .btn:disabled  { opacity: .5; cursor: not-allowed; }
+  .btn-primary:hover:not(:disabled)   { background: #1b5e20; }
+  .btn-secondary:hover:not(:disabled) { background: #162d4e; }
+
+  /* ── Section divider ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    border-bottom: 2px solid #0d2240;
+    padding-bottom: 4px;
+    margin: 16px 0 10px;
+  }
+
+  /* ── Two-column row ── */
+  .row2 { display: flex; gap: 8px; }
+  .row2 > * { flex: 1; }
+
+  /* ── Catalog items ── */
+  .catalog-group { margin-bottom: 10px; }
+  .catalog-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #0d2240;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    padding: 4px 0 2px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 4px;
+  }
+  .catalog-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .catalog-item:hover { background: #f5f5f5; }
+  .catalog-item input[type=checkbox] { margin-top: 2px; width: auto; flex-shrink: 0; }
+  .catalog-item-desc { flex: 1; font-size: 12px; line-height: 1.4; }
+  .catalog-item-price { font-size: 11px; color: #2e7d32; font-weight: 700; white-space: nowrap; }
+
+  /* ── Custom line item ── */
+  .custom-item {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .custom-item input { flex: 1; }
+  .custom-item input.price-input { width: 80px; flex: none; }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .remove-btn:hover { color: #c62828; }
+
+  /* ── Total bar ── */
+  .total-bar {
+    background: #2e7d32;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .total-bar .label { font-size: 12px; font-weight: 700; }
+  .total-bar .amount { font-size: 20px; font-weight: 900; }
+
+  /* ── Status messages ── */
+  .msg {
+    padding: 10px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    margin-top: 10px;
+    display: none;
+    word-break: break-word;
+  }
+  .msg.success { background: #e8f5e9; color: #1b5e20; border-left: 4px solid #2e7d32; }
+  .msg.error   { background: #ffebee; color: #b71c1c; border-left: 4px solid #c62828; }
+  .msg.info    { background: #e3f2fd; color: #0d47a1; border-left: 4px solid #1565c0; }
+
+  /* ── Loading spinner ── */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Tab nav (proposal / settings) ── */
+  .tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    background: #f9f9f9;
+  }
+  .tab {
+    flex: 1;
+    padding: 9px 4px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active { color: #0d2240; border-bottom-color: #0d2240; }
+
+  .note { font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ══ LOADING ═══════════════════════════════════════════════ -->
+<div id="view-loading" class="view active">
+  <div style="padding:40px 16px;text-align:center;color:#888;">
+    <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+    Loading…
+  </div>
+</div>
+
+<!-- ══ SETUP ══════════════════════════════════════════════════ -->
+<div id="view-setup" class="view">
+  <div class="header">
+    🏠 Roofing Proposal System
+    <span class="header-sub">First-time setup</span>
+  </div>
+  <div style="padding:16px;">
+    <p style="color:#555;font-size:12px;line-height:1.6;margin-bottom:4px;">
+      Enter your company details once. They'll appear on every PDF you send.
+    </p>
+
+    <label>Company Name *</label>
+    <input id="s-name" type="text" placeholder="Omar's Roofing Inc." />
+
+    <label>Your Phone</label>
+    <input id="s-phone" type="tel" placeholder="(555) 123-4567" />
+
+    <label>Your Email (proposals sent from this)</label>
+    <input id="s-email" type="email" placeholder="omar@example.com" />
+
+    <label>License #</label>
+    <input id="s-license" type="text" placeholder="CA-1234567" />
+
+    <label>Tagline <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+    <input id="s-tagline" type="text" placeholder="Licensed & Insured · Family Owned" />
+
+    <div id="setup-msg" class="msg"></div>
+    <button class="btn btn-primary" id="btn-save-settings" onclick="saveSettings()">
+      Save &amp; Continue →
+    </button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ════════════════════════════════════════════════ -->
+<div id="view-main" class="view">
+
+  <div class="header">
+    <span id="hdr-company">🏠 Roofing Tools</span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-proposal" onclick="switchTab('proposal')">✏️ Proposal</div>
+    <div class="tab" id="tab-settings"  onclick="switchTab('settings')">⚙️ Settings</div>
+  </div>
+
+  <!-- ─── PROPOSAL TAB ──────────────────────────────────────── -->
+  <div id="pane-proposal" style="padding:16px;">
+
+    <div class="section-label">Client Information</div>
+
+    <label>Client Name *</label>
+    <input id="p-name" type="text" placeholder="John Smith" />
+
+    <label>Property Address *</label>
+    <input id="p-address" type="text" placeholder="123 Main St, City, CA 90210" />
+
+    <div class="row2">
+      <div>
+        <label>Client Phone</label>
+        <input id="p-phone" type="tel" placeholder="(555) 000-0000" />
+      </div>
+      <div>
+        <label>Client Email</label>
+        <input id="p-email" type="email" placeholder="john@email.com" />
+      </div>
+    </div>
+
+    <div class="section-label">Project Details</div>
+
+    <div class="row2">
+      <div>
+        <label>Roof Type</label>
+        <select id="p-roof"></select>
+      </div>
+      <div>
+        <label>Warranty</label>
+        <select id="p-warranty"></select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>Square Feet</label>
+        <input id="p-sqft" type="number" placeholder="1500" />
+      </div>
+      <div>
+        <label>Color Choice</label>
+        <input id="p-color" type="text" placeholder="Charcoal" />
+      </div>
+    </div>
+
+    <div class="section-label">Scope of Work</div>
+    <div id="catalog-list">
+      <div style="color:#aaa;font-size:12px;">Loading catalog…</div>
+    </div>
+
+    <!-- Custom line items -->
+    <div style="margin-top:10px;">
+      <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:6px;">+ Custom Items</div>
+      <div id="custom-items"></div>
+      <button class="btn btn-outline" onclick="addCustomItem()" style="font-size:12px;padding:6px;">
+        + Add custom line item
+      </button>
+    </div>
+
+    <!-- Total -->
+    <div class="total-bar">
+      <span class="label">TOTAL ESTIMATE</span>
+      <span class="amount" id="total-display">$0</span>
+    </div>
+
+    <label>Notes <span style="font-weight:400;text-transform:none;">(optional, appears on PDF)</span></label>
+    <textarea id="p-notes" placeholder="Special instructions, access notes, etc."></textarea>
+
+    <div id="proposal-msg" class="msg"></div>
+
+    <button class="btn btn-primary" id="btn-send" onclick="sendProposal()">
+      📧 Send Proposal to Client
+    </button>
+    <button class="btn btn-secondary" id="btn-save-only" onclick="sendProposal(true)">
+      💾 Save to Drive (no email)
+    </button>
+
+    <p class="note" style="margin-top:8px;">
+      PDF is saved to your Drive. Email comes from your Gmail.
+    </p>
+  </div>
+
+  <!-- ─── SETTINGS TAB ──────────────────────────────────────── -->
+  <div id="pane-settings" style="padding:16px;display:none;">
+    <div class="section-label">Company Details</div>
+
+    <label>Company Name *</label>
+    <input id="ss-name" type="text" />
+
+    <label>Phone</label>
+    <input id="ss-phone" type="tel" />
+
+    <label>Email</label>
+    <input id="ss-email" type="email" />
+
+    <label>License #</label>
+    <input id="ss-license" type="text" />
+
+    <label>Tagline</label>
+    <input id="ss-tagline" type="text" />
+
+    <div id="settings-msg" class="msg"></div>
+    <button class="btn btn-primary" id="btn-update-settings" onclick="updateSettings()">
+      Save Settings
+    </button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+  // ── State ──────────────────────────────────────────────────
+  var state = { catalog: [], config: {} };
+
+  // ── Init ───────────────────────────────────────────────────
+  window.onload = function() {
+    google.script.run
+      .withSuccessHandler(onStateLoaded)
+      .withFailureHandler(onLoadError)
+      .getAppState();
+  };
+
+  function onStateLoaded(s) {
+    state = s;
+    if (!s.setupComplete) {
+      show('view-setup');
+    } else {
+      populateForm(s);
+      show('view-main');
+    }
+  }
+
+  function onLoadError(err) {
+    show('view-loading');
+    document.getElementById('view-loading').innerHTML =
+      '<div style="padding:24px;color:#c62828;font-size:12px;">⚠️ Failed to load: ' + err.message + '</div>';
+  }
+
+  // ── Populate selects + catalog ──────────────────────────────
+  function populateForm(s) {
+    document.getElementById('hdr-company').textContent = '🏠 ' + s.companyName;
+
+    // Roof type select
+    var roofSel = document.getElementById('p-roof');
+    roofSel.innerHTML = '';
+    (s.roofTypes || []).forEach(function(t) {
+      roofSel.appendChild(new Option(t, t));
+    });
+
+    // Warranty select
+    var warSel = document.getElementById('p-warranty');
+    warSel.innerHTML = '';
+    (s.warrantyOptions || []).forEach(function(w) {
+      var opt = new Option(w, w);
+      if (w === s.defaultWarranty) opt.selected = true;
+      warSel.appendChild(opt);
+    });
+
+    // Settings tab fields
+    document.getElementById('ss-name').value    = s.companyName    || '';
+    document.getElementById('ss-phone').value   = s.companyPhone   || '';
+    document.getElementById('ss-email').value   = s.companyEmail   || '';
+    document.getElementById('ss-license').value = s.companyLicense || '';
+    document.getElementById('ss-tagline').value = s.companyTagline || '';
+
+    // Catalog
+    buildCatalog(s.catalog || []);
+  }
+
+  function buildCatalog(items) {
+    var container = document.getElementById('catalog-list');
+    if (!items.length) {
+      container.innerHTML = '<div style="color:#aaa;font-size:12px;">No catalog items found on the Catalog sheet.</div>';
+      return;
+    }
+
+    // Group by category
+    var groups = {};
+    items.forEach(function(item) {
+      var cat = item.category || 'Other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+
+    var html = '';
+    Object.keys(groups).forEach(function(cat) {
+      html += '<div class="catalog-group"><div class="catalog-group-title">' + cat + '</div>';
+      groups[cat].forEach(function(item) {
+        var priceLabel = item.price ? '$' + item.price.toLocaleString() : 'Included';
+        html += '<label class="catalog-item">'
+          + '<input type="checkbox" data-item="' + encodeItem(item) + '" onchange="recalcTotal()">'
+          + '<span class="catalog-item-desc">' + item.description
+          + (item.unit ? ' <span style="color:#aaa;">(' + item.unit + ')</span>' : '')
+          + '</span>'
+          + '<span class="catalog-item-price">' + priceLabel + '</span>'
+          + '</label>';
+      });
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function encodeItem(item) {
+    return encodeURIComponent(JSON.stringify(item));
+  }
+
+  // ── Totals ─────────────────────────────────────────────────
+  function recalcTotal() {
+    var total = 0;
+
+    // Catalog checkboxes
+    document.querySelectorAll('#catalog-list input[type=checkbox]:checked').forEach(function(cb) {
+      var item = JSON.parse(decodeURIComponent(cb.dataset.item));
+      total += item.price || 0;
+    });
+
+    // Custom items
+    document.querySelectorAll('.custom-price').forEach(function(inp) {
+      total += parseFloat(inp.value) || 0;
+    });
+
+    document.getElementById('total-display').textContent = '$' + total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  // ── Custom items ───────────────────────────────────────────
+  var customCount = 0;
+  function addCustomItem() {
+    var id = ++customCount;
+    var div = document.createElement('div');
+    div.className = 'custom-item';
+    div.id = 'custom-' + id;
+    div.innerHTML = '<input type="text" placeholder="Description" class="custom-desc">'
+      + '<input type="number" placeholder="$0" class="custom-price price-input" oninput="recalcTotal()" min="0">'
+      + '<button class="remove-btn" onclick="removeCustom(' + id + ')">✕</button>';
+    document.getElementById('custom-items').appendChild(div);
+  }
+
+  function removeCustom(id) {
+    var el = document.getElementById('custom-' + id);
+    if (el) el.remove();
+    recalcTotal();
+  }
+
+  // ── Collect line items ─────────────────────────────────────
+  function collectLineItems() {
+    var items = [];
+
+    document.querySelectorAll('#catalog-list input[type=checkbox]:checked').forEach(function(cb) {
+      items.push(JSON.parse(decodeURIComponent(cb.dataset.item)));
+    });
+
+    document.querySelectorAll('.custom-item').forEach(function(row) {
+      var desc  = row.querySelector('.custom-desc').value.trim();
+      var price = parseFloat(row.querySelector('.custom-price').value) || 0;
+      if (desc) items.push({ description: desc, price: price, unit: '', category: 'Custom' });
+    });
+
+    return items;
+  }
+
+  // ── Send proposal ──────────────────────────────────────────
+  function sendProposal(saveOnly) {
+    var name    = document.getElementById('p-name').value.trim();
+    var address = document.getElementById('p-address').value.trim();
+    if (!name || !address) {
+      showMsg('proposal-msg', 'Client name and address are required.', 'error');
+      return;
+    }
+
+    var lineItems = collectLineItems();
+    if (!lineItems.length) {
+      showMsg('proposal-msg', 'Please select at least one scope of work item.', 'error');
+      return;
+    }
+
+    var total = 0;
+    lineItems.forEach(function(i) { total += i.price || 0; });
+
+    var clientEmail = document.getElementById('p-email').value.trim();
+    if (!saveOnly && !clientEmail) {
+      showMsg('proposal-msg', 'Enter a client email to send, or use "Save to Drive" to skip emailing.', 'error');
+      return;
+    }
+
+    var payload = {
+      clientName:    name,
+      clientAddress: address,
+      clientPhone:   document.getElementById('p-phone').value.trim(),
+      clientEmail:   saveOnly ? '' : clientEmail,
+      roofType:      document.getElementById('p-roof').value,
+      sqft:          document.getElementById('p-sqft').value,
+      warranty:      document.getElementById('p-warranty').value,
+      colorChoice:   document.getElementById('p-color').value.trim(),
+      lineItems:     lineItems,
+      total:         total,
+      notes:         document.getElementById('p-notes').value.trim(),
+    };
+
+    setLoading('btn-send', true, '📧 Sending…');
+    setLoading('btn-save-only', true);
+    showMsg('proposal-msg', 'Generating PDF…', 'info');
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setLoading('btn-send', false, '📧 Send Proposal to Client');
+        setLoading('btn-save-only', false, '💾 Save to Drive (no email)');
+        if (res.error) {
+          showMsg('proposal-msg', '❌ ' + res.error, 'error');
+        } else {
+          var msg = saveOnly
+            ? '✅ Saved! <a href="' + res.fileUrl + '" target="_blank">Open PDF ↗</a>'
+            : '✅ Sent to ' + payload.clientEmail + '! Estimate ' + res.estimateNum + '. <a href="' + res.fileUrl + '" target="_blank">View PDF ↗</a>';
+          showMsg('proposal-msg', msg, 'success');
+          resetProposalForm();
+        }
+      })
+      .withFailureHandler(function(err) {
+        setLoading('btn-send', false, '📧 Send Proposal to Client');
+        setLoading('btn-save-only', false, '💾 Save to Drive (no email)');
+        showMsg('proposal-msg', '❌ ' + err.message, 'error');
+      })
+      .submitProposal(payload);
+  }
+
+  // ── Save settings (first run) ──────────────────────────────
+  function saveSettings() {
+    var name = document.getElementById('s-name').value.trim();
+    if (!name) { showMsg('setup-msg', 'Company name is required.', 'error'); return; }
+
+    setLoading('btn-save-settings', true, 'Saving…');
+    var payload = {
+      companyName:    name,
+      companyPhone:   document.getElementById('s-phone').value.trim(),
+      companyEmail:   document.getElementById('s-email').value.trim(),
+      companyLicense: document.getElementById('s-license').value.trim(),
+      companyTagline: document.getElementById('s-tagline').value.trim(),
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setLoading('btn-save-settings', false, 'Save & Continue →');
+        if (res.error) {
+          showMsg('setup-msg', '❌ ' + res.error, 'error');
+        } else {
+          // Reload the sidebar with the fresh state
+          google.script.run
+            .withSuccessHandler(function(s) {
+              state = s;
+              populateForm(s);
+              show('view-main');
+            })
+            .getAppState();
+        }
+      })
+      .withFailureHandler(function(err) {
+        setLoading('btn-save-settings', false, 'Save & Continue →');
+        showMsg('setup-msg', '❌ ' + err.message, 'error');
+      })
+      .saveSettings(payload);
+  }
+
+  // ── Update settings ────────────────────────────────────────
+  function updateSettings() {
+    var name = document.getElementById('ss-name').value.trim();
+    if (!name) { showMsg('settings-msg', 'Company name is required.', 'error'); return; }
+
+    setLoading('btn-update-settings', true, 'Saving…');
+    var payload = {
+      companyName:    name,
+      companyPhone:   document.getElementById('ss-phone').value.trim(),
+      companyEmail:   document.getElementById('ss-email').value.trim(),
+      companyLicense: document.getElementById('ss-license').value.trim(),
+      companyTagline: document.getElementById('ss-tagline').value.trim(),
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setLoading('btn-update-settings', false, 'Save Settings');
+        if (res.error) {
+          showMsg('settings-msg', '❌ ' + res.error, 'error');
+        } else {
+          document.getElementById('hdr-company').textContent = '🏠 ' + name;
+          showMsg('settings-msg', '✅ Settings saved!', 'success');
+        }
+      })
+      .withFailureHandler(function(err) {
+        setLoading('btn-update-settings', false, 'Save Settings');
+        showMsg('settings-msg', '❌ ' + err.message, 'error');
+      })
+      .saveSettings(payload);
+  }
+
+  // ── Tab switching ──────────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById('pane-proposal').style.display = tab === 'proposal' ? 'block' : 'none';
+    document.getElementById('pane-settings').style.display = tab === 'settings' ? 'block' : 'none';
+    document.getElementById('tab-proposal').className = 'tab' + (tab === 'proposal' ? ' active' : '');
+    document.getElementById('tab-settings').className  = 'tab' + (tab === 'settings'  ? ' active' : '');
+  }
+
+  // ── Helpers ────────────────────────────────────────────────
+  function show(id) {
+    ['view-loading','view-setup','view-main'].forEach(function(v) {
+      document.getElementById(v).classList.remove('active');
+    });
+    document.getElementById(id).classList.add('active');
+  }
+
+  function showMsg(id, html, type) {
+    var el = document.getElementById(id);
+    el.innerHTML = html;
+    el.className = 'msg ' + type;
+    el.style.display = 'block';
+  }
+
+  function setLoading(btnId, loading, label) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    if (label) btn.innerHTML = loading ? '<span class="spinner"></span>' + label : label;
+  }
+
+  function resetProposalForm() {
+    document.getElementById('p-name').value    = '';
+    document.getElementById('p-address').value = '';
+    document.getElementById('p-phone').value   = '';
+    document.getElementById('p-email').value   = '';
+    document.getElementById('p-sqft').value    = '';
+    document.getElementById('p-color').value   = '';
+    document.getElementById('p-notes').value   = '';
+    document.getElementById('custom-items').innerHTML = '';
+    document.querySelectorAll('#catalog-list input[type=checkbox]').forEach(function(cb) {
+      cb.checked = false;
+    });
+    recalcTotal();
+  }
+</script>
+</body>
+</html>

@@ -1,187 +1,113 @@
-# Roofing Proposal Platform
+# Roofing Proposal System
 
-A self-service SaaS onboarding platform for roofing contractors. Each contractor signs in with Google and gets their own private proposal system — folders, templates, a Google Sheet, and a deployed web app — all inside their own Google account. The platform owner has zero access to contractor data.
+A free, self-contained proposal and invoice tool for roofing contractors — built entirely on Google Workspace. No server, no subscriptions, no third-party access to your data.
 
 ---
 
-## How It Works
+## How it works
 
-### The Big Picture
+The system is a Google Sheet with an embedded Apps Script. When a contractor makes a copy of the template sheet, everything runs **inside their own Google account**:
+
+- PDFs are saved to **their** Google Drive
+- Emails are sent from **their** Gmail
+- The developer has **zero access** to any data
+
+---
+
+## Setup (one time, ~3 minutes)
+
+### Step 1 — Make a copy of the template sheet
+
+Click this link (replace `SHEET_ID` with your published template ID):
 
 ```
-Contractor visits platform
-        ↓
-Fills in company details + logo
-        ↓
-Clicks "Sign in with Google"
-        ↓
-Platform creates everything in their Google account (~30 sec)
-        ↓
-Contractor gets their private Web App URL
-        ↓
-Platform is never involved again
+https://docs.google.com/spreadsheets/d/SHEET_ID/copy
 ```
 
-### What Gets Created (in the contractor's Google account)
+Google will copy the Sheet — including the embedded script — directly into your Drive.
 
-| Resource | Purpose |
-|---|---|
-| Google Sheet | Catalog of line items + Leads tracker |
-| Proposals Folder | Generated proposal PDFs land here |
-| Templates Folder | Holds proposal/invoice templates + logo |
-| Proposal Template Doc | Editable — contractor can add branding |
-| Invoice Template Doc | Editable — used for invoice generation |
-| Apps Script Project | The web app backend (runs as contractor) |
-| Web App Deployment | The URL the contractor bookmarks on their phone |
+### Step 2 — Open the sidebar
 
----
+In your Google Sheet, click:
 
-## Privacy Model
+> **Extensions → Apps Script → Run → onOpen** (first time only, to trigger the menu)
 
-### Platform owner has zero ongoing access
+Then in the sheet:
 
-The contractor's OAuth token is used **once** during the 30-second provisioning window to create their resources. It is held only in server memory and is never written to disk, logged, or stored anywhere. After provisioning completes, the token is garbage collected.
+> **🏠 Roofing Tools → ✏️ New Proposal**
 
-After setup, the contractor's system is completely independent:
+Google will ask you to **Allow** the script to access your Drive and Gmail. This is a one-time, 30-second step — click Allow.
 
-- The Apps Script runs **as the contractor** (`executeAs: USER_DEPLOYING`)
-- All Drive/Sheet/Gmail operations use **their** Google account
-- There is no callback, webhook, or API call back to this platform
-- The platform owner cannot read their leads, proposals, or any data
+### Step 3 — Enter your company details
 
-### Why the platform needs OAuth credentials at all
-
-Google OAuth requires a registered app (Client ID + Secret) to act as the authentication entry point. This is how every "Sign in with Google" button works — one registered app, many users, each with their own isolated data. The platform credentials are only the **door** — they do not grant any ongoing access to what's behind it.
+Fill in your company name, phone, email, and license number. Click **Save & Continue**. Done.
 
 ---
 
-## Auth Flows Explained
+## Daily use
 
-There are two completely separate authorization steps:
+1. Open your Google Sheet
+2. Click **🏠 [Your Company] → ✏️ New Proposal**
+3. Fill in client details and check off scope of work items
+4. Click **Send Proposal to Client**
 
-### 1. Onboarding (platform side)
-When a contractor clicks "Sign in with Google" on the onboarding form:
-- They authenticate through the **platform's** Google OAuth app
-- This grants a temporary token used to create their Drive resources
-- Token is discarded after ~30 seconds
-- This uses the platform's `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`
+The client receives a professional PDF by email. A copy is saved to your Drive. The lead is logged in the Leads sheet automatically.
 
-### 2. First Web App Open (contractor side)
-When a contractor opens their Web App URL for the first time:
-- Google asks them to authorize **their own Apps Script** to access their Drive/Sheets/Gmail
-- This has nothing to do with the platform credentials
-- It's Google saying: "this script in your account wants permissions — do you allow it?"
-- They click Allow once, and never see this screen again
+To generate an invoice for an existing job:
+- Click the row in the Leads sheet
+- Click **🏠 [Your Company] → 🧾 Invoice Selected Row**
 
 ---
 
-## Developer Setup
+## Customizing the catalog
 
-### Prerequisites
-- Node.js 18+
-- A Google Cloud project with these APIs enabled:
-  - Google Drive API
-  - Google Sheets API
-  - Google Apps Script API
-- An OAuth 2.0 Client ID (Web application type)
-  - Redirect URI: `http://localhost:3000/auth/callback` (local) or your deployed URL
+Open the **Catalog** sheet tab. Add, edit, or remove line items. The sidebar picks them up automatically — no code changes needed.
 
-### Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Copy and fill in your OAuth credentials
-cp local/app-credentials.json.example local/app-credentials.json
-# Edit local/app-credentials.json with your real Client ID + Secret
-
-# Start the server
-npm run dev
-# → http://localhost:3000
-```
-
-### Environment Variables (Production)
-
-| Variable | Description |
-|---|---|
-| `GOOGLE_CLIENT_ID` | OAuth Client ID from Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | OAuth Client Secret |
-| `REDIRECT_URI` | Full callback URL e.g. `https://your-app.railway.app/auth/callback` |
-
-### Deployment (Railway)
-
-1. Push to GitHub
-2. Connect repo to [railway.app](https://railway.app)
-3. Add the three environment variables above in Railway → Service → Variables
-4. Generate a public domain in Railway → Service → Settings → Networking
-5. Add the domain's `/auth/callback` URL to Google Cloud Console → Credentials → Authorized redirect URIs
+| Column | Description |
+|--------|-------------|
+| Item | Short key (e.g. `shingle_30yr`) |
+| Description | Text shown on the PDF |
+| Price | Dollar amount (0 = Included) |
+| Unit | Unit label (e.g. `per job`) |
+| Category | Groups items in the sidebar |
+| Active | `Yes` to show, anything else to hide |
 
 ---
 
-## Google Cloud Console Setup
+## Sharing with someone (like a friend or colleague)
 
-### One-time steps (developer does this)
-
-1. Create a project at [console.cloud.google.com](https://console.cloud.google.com)
-2. Enable APIs: Drive, Sheets, Apps Script
-3. Create OAuth 2.0 Client ID (Web application)
-4. Go to Google Auth Platform → Audience:
-   - User type: External
-   - Add your email as a test user
-5. Go to Data Access → add these scopes:
-   - `https://www.googleapis.com/auth/drive`
-   - `https://www.googleapis.com/auth/spreadsheets`
-   - `https://www.googleapis.com/auth/script.projects`
-   - `https://www.googleapis.com/auth/script.deployments`
-   - `https://www.googleapis.com/auth/userinfo.email`
-
-### For real contractors (before going live)
-
-The Apps Script scopes (`script.projects`, `script.deployments`) are **restricted scopes** — Google requires a security review before non-test users can use them. Before onboarding real contractors:
-- Submit your app for Google verification via Google Auth Platform → Verification Center
-- Until verified, only emails added as test users can go through onboarding
+1. Create your Google Sheet template with the script embedded using [clasp](https://github.com/google/clasp) or manually via the Apps Script editor
+2. Share the `/copy` link: `https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/copy`
+3. They click the link, follow the 3-minute setup above
+4. They are fully independent — you have zero access to their data
 
 ---
 
-## Contractor Requirements
-
-Each contractor needs to do **one thing** before their system is fully ready:
-
-**Enable the Apps Script API in their own Google account:**
-→ [https://script.google.com/home/usersettings](https://script.google.com/home/usersettings)
-
-The platform error page shows a clickable button for this automatically if it's not enabled.
-
----
-
-## Project Structure
+## Project structure
 
 ```
-roofing-proposal-system/
-├── local/
-│   ├── server.js              # Express onboarding platform
-│   ├── auth.js                # Google OAuth2 client + credential loading
-│   ├── provision.js           # Core provisioning — creates all Drive resources
-│   ├── app-credentials.json   # Your OAuth Client ID + Secret (gitignored)
-│   └── app-credentials.json.example  # Template — fill and copy
-├── gas/
-│   ├── Code.gs                # Apps Script backend (%%BOOTSTRAP_JSON%% injected at deploy)
-│   └── Index.html             # Web app frontend
-├── railpack.toml              # Railway deployment config
-└── package.json
+gas/
+  Code.gs       — All server-side logic (PDF generation, email, Drive, Sheets)
+  Sidebar.html  — The sidebar UI (form, catalog checkboxes, settings tab)
 ```
 
-### How Code.gs templating works
-
-`gas/Code.gs` is a template file. The `%%BOOTSTRAP_JSON%%` placeholder is replaced by `provision.js` at onboarding time with a JSON string containing the contractor's real resource IDs (Sheet ID, folder IDs, template IDs, company info). The script reads this on first run and stores everything in Google's Script Properties — after that the bootstrap data is never used again.
+That's the entire system. No Node.js server, no Railway, no OAuth app registration.
 
 ---
 
-## npm Scripts
+## Privacy model
 
-| Script | What it does |
-|---|---|
-| `npm run dev` | Start local dev server on port 3000 |
-| `npm start` | Start server (used by Railway in production) |
-| `npm run push` | Push gas/ to Apps Script via clasp (local testing only) |
+| What | Where it lives |
+|------|---------------|
+| Proposals folder | Contractor's Google Drive |
+| PDF files | Contractor's Google Drive |
+| Leads data | Contractor's Google Sheet |
+| Email sending | Contractor's Gmail |
+| Script execution | Contractor's Google account |
+| Developer access | **None — zero** |
+
+---
+
+## License
+
+MIT © 2026 Harsh Kumar

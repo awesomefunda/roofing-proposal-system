@@ -1,5 +1,0 @@
-[phases.install]
-cmds = ["npm install --production"]
-
-[deploy]
-startCmd = "node local/server.js"
