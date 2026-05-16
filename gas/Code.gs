@@ -1,10 +1,39 @@
 // ============================================================
 // ROOFING PROPOSAL SYSTEM — Google Apps Script
 // ============================================================
-// PDF Engine: Google Doc template + {{TAG}} replacement.
-// E-Signature: UUID token, SHA-256 tamper detection,
-// canvas image insertion, Certificate of Completion page.
-// Legal basis: ESIGN Act 15 U.S.C. § 7001 / UETA
+//
+// ARCHITECTURE DECISION: Why Google Apps Script?
+//   Zero cost, zero server, zero vendor lock-in. Everything runs
+//   inside the contractor's own Google account — Drive, Docs,
+//   Sheets, Gmail, and Apps Script are all included for free.
+//   No DocuSign subscription (~$25-45/mo), no Pandadoc, no Zapier.
+//
+// HOW IT WORKS (high level):
+//   1. Contractor fills form → submitProposal() runs
+//   2. Google Doc template is duplicated, {{TAGS}} replaced
+//   3. SHA-256 hash of doc text is saved as tamper baseline
+//   4. UUID token written to Leads sheet; signing URL emailed to client
+//   5. Client opens URL → Sign.html served via doGet()
+//   6. Client passes email KBA → verifyClientAccess() confirms token + email
+//   7. Client draws signature → submitSignature() embeds image in Doc,
+//      appends Certificate of Completion, exports PDF, emails both parties
+//
+// PDF ENGINE: Google Doc template + {{TAG}} replacement.
+// E-SIGNATURE: UUID token, SHA-256 tamper detection,
+//   canvas image insertion, Certificate of Completion page.
+// LEGAL BASIS: ESIGN Act 15 U.S.C. § 7001 / UETA
+//
+// KEY SCRIPT PROPERTIES (set once via Settings tab or editor):
+//   COMPANY_NAME, OWNER_NAME, COMPANY_PHONE, COMPANY_EMAIL,
+//   COMPANY_LICENSE, COMPANY_TAGLINE, COMPANY_WEBSITE,
+//   SHEET_ID              — Google Sheets spreadsheet ID (Leads + Catalog tabs)
+//   PROPOSALS_FOLDER_ID   — Drive folder where proposal Docs are saved
+//   PROPOSAL_TEMPLATE_DOC_ID — Master Google Doc template
+//   INVOICE_TEMPLATE_DOC_ID  — Master invoice Doc template
+//   CONTRACTOR_PIN        — Hashed PIN for contractor app access
+// NOTE: Signing link URL is derived automatically from ScriptApp.getService().getUrl()
+//   at proposal submission time. No manual URL configuration needed — just always
+//   access the contractor app via the latest /exec deployment URL.
 // ============================================================
 
 const C = {
@@ -95,8 +124,16 @@ function doGet(e) {
 function serveSignPage_(token) {
   var cfg  = getConfig();
   var lead = getLeadByToken_(token);
+  // DESIGN DECISION: token is injected server-side into pageData rather than
+  // read from window.location.search in Sign.html. Google Apps Script serves
+  // HTML inside a googleusercontent.com iframe where window.location.search
+  // does NOT contain the original ?sign= query parameter — reading it client-side
+  // always returns empty, causing "Invalid Link" for every customer.
+  // The token is not secret (it's already in the signing URL the client received),
+  // so server injection is safe. Security comes from the email KBA step.
   var pageData = {
     valid:        !!lead,
+    token:        token,
     companyName:  cfg.COMPANY_NAME,
     companyPhone: cfg.COMPANY_PHONE,
   };
@@ -238,15 +275,29 @@ function getCatalogItems() {
   try {
     var cfg   = getConfig();
     var sheet = getSheet_('Catalog', cfg);
-    if (!sheet) return [];
+    if (!sheet) {
+      Logger.log('⚠️ Catalog sheet not found. Expected sheet named "Catalog" in your Google Sheet.');
+      return [];
+    }
     var rows = sheet.getDataRange().getValues();
-    return rows.slice(1)
-      .filter(function(r) { return String(r[5]).toUpperCase() === 'YES'; })
+    if (rows.length < 2) {
+      Logger.log('⚠️ Catalog sheet is empty or has no data rows.');
+      return [];
+    }
+    var items = rows.slice(1)
+      .filter(function(r) { return r.length > 5 && String(r[5]).toUpperCase() === 'YES'; })
       .map(function(r) {
-        return { item: String(r[0]), description: String(r[1]),
-                 price: Number(r[2]) || 0, unit: String(r[3]), category: String(r[4]) };
+        return { item: String(r[0]||''), description: String(r[1]||''),
+                 price: Number(r[2]) || 0, unit: String(r[3]||''), category: String(r[4]||'') };
       });
-  } catch(e) { return []; }
+    if (items.length === 0) {
+      Logger.log('⚠️ No items found in Catalog sheet with "YES" in column F (column 6). Check your Catalog sheet setup.');
+    }
+    return items;
+  } catch(e) { 
+    Logger.log('❌ Error loading Catalog: ' + e.message);
+    return [];
+  }
 }
 
 function getLeads() {
@@ -366,6 +417,8 @@ function submitProposal(payload) {
   try { docHash = computeDocHash_(docId); } catch(e) { Logger.log('Hash failed: ' + e.message); }
 
   var rowId;
+  // LockService prevents two proposals being submitted simultaneously (race condition
+  // on getLastRow() + appendRow()). 10-second wait covers slow Doc creation.
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -376,13 +429,19 @@ function submitProposal(payload) {
     try { lock.releaseLock(); } catch(_) {}
   }
 
+  // Signing URL: automatically derived from whichever deployment is currently serving this request.
+  // ScriptApp.getService().getUrl() returns the current deployment's URL, but may include:
+  //   - /u/N/ prefix when the logged-in owner accesses the web app (user-specific, 404 for others)
+  //   - /dev suffix when accidentally called from the editor instead of the web app
+  // Both are stripped to produce the canonical /macros/s/DEPLOY_ID/exec URL.
+  // No manual configuration needed — just use the new deployment URL for the contractor app
+  // and all signing links will automatically use that same deployment.
   var appUrl = '';
   try {
     appUrl = ScriptApp.getService().getUrl();
-    // Strip /u/N/ prefix — that URL only works for the deploying user's own browser.
-    // Convert to the canonical public URL: /macros/s/DEPLOYMENT_ID/exec
-    appUrl = appUrl.replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
-  } catch(e) {}
+    appUrl = appUrl.replace(/\/macros\/u\/\d+\/s\//, '/macros/s/'); // strip /u/N/ prefix
+    appUrl = appUrl.replace(/\/dev$/, '/exec');                      // /dev → /exec (editor safety)
+  } catch(e) { Logger.log('URL detection failed: ' + e.message); }
   var signingUrl = appUrl ? appUrl + '?sign=' + token : '';
 
   var emailSent = false, emailError = null;
@@ -571,7 +630,12 @@ function createProposalDoc_(payload, cfg, docNumber) {
   Object.keys(tags).forEach(function(k) { body.replaceText('\\{\\{' + k + '\\}\\}', tags[k]); });
   _doc1.saveAndClose();
   // Share doc so client can view it via the link in the email
-  try { DriveApp.getFileById(docId).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch(e) {}
+  try {
+    DriveApp.getFileById(docId).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    Logger.log('✅ Document shared successfully: ' + docId);
+  } catch(e) {
+    Logger.log('❌ Failed to share document ' + docId + ': ' + e.message);
+  }
   return { docId: docId, docUrl: tempDoc.getUrl() };
 }
 
@@ -1013,6 +1077,11 @@ function sendSigningLinkEmail_(p, signingUrl, docId, estimateNum, cfg) {
 
 function sendOwnerNotification_(p, signingUrl, docUrl, estimateNum, cfg) {
   if (!cfg.COMPANY_EMAIL) return;
+  // Safety check: don't send "New Proposal Sent" email to the customer (only to the owner/admin)
+  if (cfg.COMPANY_EMAIL.toLowerCase().trim() === p.clientEmail.toLowerCase().trim()) {
+    Logger.log('⚠️ Skipped owner notification — COMPANY_EMAIL is the same as client email. Please set a separate admin email in Settings.');
+    return;
+  }
   GmailApp.sendEmail(cfg.COMPANY_EMAIL,
     '✅ New Proposal Sent — ' + estimateNum + ' · ' + p.clientName + ' ($' + Number(p.total).toLocaleString() + ')',
     ['New proposal created.','','Estimate: '+estimateNum,'Client: '+p.clientName,
@@ -1053,6 +1122,14 @@ function sendSignedEmail_(p, pdfBlob, cfg) {
 // UTILITIES
 // ============================================================
 
+// DESIGN DECISION: Two-path sheet lookup.
+// Primary path: SHEET_ID script property → SpreadsheetApp.openById()
+//   Works in all contexts: web app, editor, sidebar, scheduled tasks.
+//   SHEET_ID must be saved via Settings tab or setSheetId() editor function.
+// Fallback path: getActiveSpreadsheet()
+//   Only works when script is run from the Sheets editor (container-bound context).
+//   Always throws in the standalone web app — caught and returns null.
+// If this function returns null, the caller must guard against it (check before getLastRow etc).
 function getSheet_(name, cfg) {
   var id = (cfg && cfg.SHEET_ID) ? cfg.SHEET_ID : P('SHEET_ID');
   if (id) { try { return SpreadsheetApp.openById(id).getSheetByName(name); } catch(e) {} }

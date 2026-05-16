@@ -30,8 +30,10 @@
 
 <!--
   SERVER-INJECTED BOOTSTRAP (minimal — no sensitive proposal data).
-  Only { valid, companyName, companyPhone } come from the server.
-  The signing token is read from window.location.search.
+  { valid, token, companyName, companyPhone } come from the server.
+  NOTE: token is injected server-side (not read from window.location.search)
+  because GAS serves HTML inside a googleusercontent.com iframe where
+  window.location.search does NOT contain the original ?sign= query param.
   Full proposal data (total, docUrl, clientName) is returned only
   after verifyClientAccess() passes — the email KBA step.
 -->
@@ -341,10 +343,8 @@ const Sign = (function() {
     const boot = PAGE_DATA || {};
     document.getElementById('hdrCompany').textContent = boot.companyName || 'Roofing Proposals';
 
-    // Read signing token from URL — it was never injected into the page source
-    try {
-      token = new URLSearchParams(window.location.search).get('sign') || '';
-    } catch(e) {}
+    // Token is injected server-side (window.location.search is unavailable in GAS iframe)
+    token = boot.token || '';
 
     if (!boot.valid || !token) {
       show('viewInvalid');

@@ -383,7 +383,7 @@
           </div>
           <div class="sm:col-span-2">
             <label class="block text-xs font-semibold text-gray-500 mb-1">Website</label>
-            <input id="st_website" type="url" placeholder="https://ecologicoroofing.com"
+            <input id="st_website" type="url" placeholder="https://yourcompany.com"
                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
           </div>
           <div>
@@ -512,6 +512,21 @@ function populateDropdowns(state) {
     var o = document.createElement('option'); o.value = w; o.textContent = w; wa.appendChild(o);
   });
   if (state.defaultWarranty) wa.value = state.defaultWarranty;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function populatePrevEstimates(leads) {
+  var sel = document.getElementById('prevEstimateSelect');
+  while (sel.options.length > 1) sel.remove(1);
+  (leads || []).forEach(function(l) {
+    var o = document.createElement('option');
+    o.value = l.rowId;
+    o.textContent = (l.estNum || '') + ' — ' + (l.clientName || '') + (l.timestamp ? ' (' + l.timestamp + ')' : '');
+    sel.appendChild(o);
+  });
 }
 
 // ============================================================
@@ -935,4 +950,109 @@ resetForm: function() {
 },
 
 // ── Load Previous Estimate ────────────────────────────────
+loadPreviousEstimate: function() {
+  var rowId = parseInt(document.getElementById('prevEstimateSelect').value) || 0;
+  if (!rowId) return;
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (!data) { alert('Could not load that estimate.'); return; }
+      document.getElementById('f_clientName').value  = data.clientName || '';
+      document.getElementById('f_clientStreet').value = (data.clientAddress || '').split(',')[0] || '';
+      document.getElementById('f_clientPhone').value  = data.clientPhone || '';
+      document.getElementById('f_clientEmail').value  = data.clientEmail || '';
+      document.getElementById('f_roofType').value     = data.roofType || '';
+      document.getElementById('f_sqft').value         = data.sqft || '';
+      document.getElementById('f_warranty').value     = data.warranty || '';
+      document.getElementById('f_color').value        = data.colorChoice || '';
+      document.getElementById('f_notes').value        = data.notes || '';
+      document.getElementById('f_total').value        = data.total || '';
+      if (data.colorChoice === '__custom__') document.getElementById('f_colorCustom').classList.remove('hidden');
+      document.getElementById('loadPrevNote').classList.remove('hidden');
+    })
+    .withFailureHandler(function(e) { alert('Error loading estimate: ' + e); })
+    .getLeadData(rowId);
+},
+
+loadLeads: function() {
+  var container = document.getElementById('leadsContainer');
+  container.innerHTML = '<p class="text-center text-gray-400 text-sm py-10">Loading…</p>';
+  google.script.run
+    .withSuccessHandler(function(leads) {
+      if (!leads || !leads.length) {
+        container.innerHTML = '<p class="text-center text-gray-400 text-sm py-10">No leads yet.</p>';
+        return;
+      }
+      container.innerHTML = '';
+      leads.forEach(function(lead) {
+        var div = document.createElement('div');
+        div.className = 'px-5 py-4';
+        var statusColor = (lead.status === 'Signed' || lead.status === 'Finalized') ? 'text-green-600' :
+                          lead.status === 'Invoiced' ? 'text-blue-600' : 'text-orange-500';
+        div.innerHTML =
+          '<div class="flex justify-between items-start">' +
+            '<div>' +
+              '<p class="font-semibold text-gray-800 text-sm">' + escHtml(lead.clientName || '') + '</p>' +
+              '<p class="text-xs text-gray-400">' + escHtml(lead.estimateNum || '') + ' · ' + escHtml(lead.timestamp || '') + '</p>' +
+            '</div>' +
+            '<div class="text-right">' +
+              '<p class="font-bold text-forest text-sm">$' + Number(lead.total || 0).toLocaleString() + '</p>' +
+              '<p class="text-xs ' + statusColor + '">' + escHtml(lead.status || 'Pending') + '</p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="flex gap-3 mt-2">' +
+            (lead.docUrl ? '<a href="' + escHtml(lead.docUrl) + '" target="_blank" class="text-xs text-blue-500 hover:underline">Proposal ↗</a>' : '') +
+            (lead.signedPdfUrl ? '<a href="' + escHtml(lead.signedPdfUrl) + '" target="_blank" class="text-xs text-green-600 hover:underline">Signed PDF ↗</a>' : '') +
+            (lead.invoiceUrl ? '<a href="' + escHtml(lead.invoiceUrl) + '" target="_blank" class="text-xs text-navy hover:underline">Invoice ↗</a>' : '<button onclick="App.openInvoiceModal(' + lead.rowId + ',\'' + escHtml(lead.clientName || '') + '\')" class="text-xs text-gray-400 hover:text-navy underline">+ Invoice</button>') +
+          '</div>';
+        container.appendChild(div);
+      });
+    })
+    .withFailureHandler(function(e) {
+      container.innerHTML = '<p class="text-center text-red-400 text-sm py-10">Error: ' + escHtml(e.message) + '</p>';
+    })
+    .getLeads();
+},
+
+openInvoiceModal: function(rowId, clientName) {
+  _invoiceTargetRow = rowId;
+  document.getElementById('invoiceModalClient').textContent = clientName || '';
+  document.getElementById('invoiceModalError').classList.add('hidden');
+  document.getElementById('invoiceModal').classList.remove('hidden');
+},
+
+closeInvoiceModal: function() {
+  document.getElementById('invoiceModal').classList.add('hidden');
+  _invoiceTargetRow = null;
+},
+
+confirmInvoice: function() {
+  if (!_invoiceTargetRow) return;
+  var btn = document.getElementById('btnConfirmInvoice');
+  btn.disabled = true; btn.textContent = '⏳ Generating…';
+  document.getElementById('invoiceModalError').classList.add('hidden');
+  google.script.run
+    .withSuccessHandler(function(r) {
+      btn.disabled = false; btn.textContent = 'Generate';
+      if (r && r.error) {
+        document.getElementById('invoiceModalError').textContent = r.error;
+        document.getElementById('invoiceModalError').classList.remove('hidden');
+      } else {
+        App.closeInvoiceModal();
+        App.loadLeads();
+      }
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false; btn.textContent = 'Generate';
+      document.getElementById('invoiceModalError').textContent = e.message;
+      document.getElementById('invoiceModalError').classList.remove('hidden');
+    })
+    .generateInvoiceFromRow(_invoiceTargetRow);
+},
+
+}; // End App object
+
+</script>
+</body>
+</html>
 loadPreviousEstimate: function()
