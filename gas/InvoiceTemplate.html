@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    color: #333333;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+  table { border-collapse: collapse; }
+  p     { margin: 0; }
+</style>
+</head>
+<body>
+
+<table width="760" cellpadding="0" cellspacing="0" align="center">
+<tr><td>
+
+  <!-- ═══════════════════════════════════════════
+       HEADER — Logo  |  Company  |  INVOICE label
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0">
+    <tr valign="middle">
+      <td width="200" style="border-right:2px solid #dddddd; padding:20px 16px 16px 0;">
+        {{LOGO_HTML}}
+      </td>
+      <td style="padding:20px 0 16px 20px;">
+        <p style="font-size:15px; font-weight:bold; color:#0d2240; margin-bottom:6px;">{{COMPANY_NAME}}</p>
+        <p style="font-size:12px; color:#333333; margin-bottom:4px;">&#9679; &nbsp;{{COMPANY_PHONE}}</p>
+        <p style="font-size:12px; color:#333333; margin-bottom:4px;">&#9679; &nbsp;{{COMPANY_EMAIL}}</p>
+        <p style="font-size:12px; color:#333333;">&#9679; &nbsp;Lic # {{COMPANY_LICENSE}}</p>
+      </td>
+      <td width="150" align="right" valign="middle" style="padding:20px 0 16px 0;">
+        <p style="font-size:32px; font-weight:bold; color:#0d2240; margin-bottom:4px;">INVOICE</p>
+        <p style="font-size:12px; color:#666666;"># {{INVOICE_NUM}}</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       NAVY BANNER
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+    <tr>
+      <td bgcolor="#0d2240" style="padding:12px 20px;">
+        <span style="color:#ffffff; font-size:14px; font-weight:bold;
+              text-transform:uppercase; letter-spacing:1px;">
+          Invoice for Roof Replacement Services
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       BILL TO  |  INVOICE DETAILS
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+    <tr valign="top">
+
+      <!-- BILL TO -->
+      <td width="365" style="border:1px solid #cccccc; padding:14px 16px;">
+        <p style="font-size:11px; font-weight:bold; color:#2e7d32;
+           text-transform:uppercase; letter-spacing:1px;
+           border-bottom:2px solid #2e7d32; padding-bottom:5px; margin-bottom:8px;">
+          Bill To
+        </p>
+        <p style="font-size:14px; font-weight:bold; color:#0d2240; margin-bottom:8px;">{{CLIENT_NAME}}</p>
+        <p style="font-size:12px; color:#444444; line-height:1.8;">
+          {{CLIENT_ADDRESS}}<br>
+          &#9679; &nbsp;{{CLIENT_PHONE}}<br>
+          &#9679; &nbsp;{{CLIENT_EMAIL}}
+        </p>
+      </td>
+
+      <td width="30"></td>
+
+      <!-- INVOICE DETAILS -->
+      <td width="365" style="border:1px solid #cccccc; padding:14px 16px;">
+        <p style="font-size:11px; font-weight:bold; color:#2e7d32;
+           text-transform:uppercase; letter-spacing:1px;
+           border-bottom:2px solid #2e7d32; padding-bottom:5px; margin-bottom:8px;">
+          Invoice Details
+        </p>
+        <table width="100%" cellpadding="4" cellspacing="0" style="font-size:12px;">
+          <tr>
+            <td style="color:#555555; font-weight:bold; width:100px;">Invoice #:</td>
+            <td style="color:#0d2240; font-weight:bold;">{{INVOICE_NUM}}</td>
+          </tr>
+          <tr>
+            <td style="color:#555555; font-weight:bold;">Date:</td>
+            <td>{{DATE}}</td>
+          </tr>
+          <tr>
+            <td style="color:#555555; font-weight:bold;">Due:</td>
+            <td style="color:#c62828; font-weight:bold;">Upon Completion</td>
+          </tr>
+          <tr>
+            <td style="color:#555555; font-weight:bold;">Related Est.:</td>
+            <td>{{ESTIMATE_NUM}}</td>
+          </tr>
+        </table>
+      </td>
+
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       SERVICES RENDERED
+       ═══════════════════════════════════════════ -->
+  <p style="font-size:11px; font-weight:bold; color:#888888; text-transform:uppercase;
+     letter-spacing:1px; border-bottom:2px solid #0d2240;
+     padding-bottom:5px; margin:16px 0 8px;">
+    Services Rendered
+  </p>
+  <table width="760" cellpadding="0" cellspacing="0">
+    <tbody>
+      {{LINE_ITEMS}}
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       TOTAL BAR
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+    <tr>
+      <td bgcolor="#2e7d32" style="padding:14px 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="color:#ffffff; font-size:14px; font-weight:bold;">TOTAL DUE</td>
+            <td align="right" style="color:#ffffff; font-size:28px; font-weight:bold;">{{TOTAL}}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <p style="font-size:12px; color:#555555; margin:12px 0 0;">
+    Payment due upon completion. Please make checks payable to <strong>{{COMPANY_NAME}}</strong>.
+  </p>
+
+  {{NOTES_HTML}}
+
+  <!-- Thank you -->
+  <p style="text-align:center; font-size:14px; font-weight:bold;
+     color:#2e7d32; margin:24px 0 4px;">
+    Thank you for your business!
+  </p>
+  <p style="text-align:center; font-size:12px; color:#666666;">
+    We appreciate your trust in {{COMPANY_NAME}}.
+  </p>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+    <tr>
+      <td bgcolor="#0d2240" style="padding:12px 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td align="center"
+                style="color:#aac4ff; font-size:11px; font-weight:bold;
+                       text-transform:uppercase; letter-spacing:1px;">
+              &#9673; LICENSED &amp; INSURED
+            </td>
+            <td align="center"
+                style="color:#aac4ff; font-size:11px; font-weight:bold;
+                       text-transform:uppercase; letter-spacing:1px;">
+              &#9673; QUALITY CRAFTSMANSHIP
+            </td>
+            <td align="center"
+                style="color:#aac4ff; font-size:11px; font-weight:bold;
+                       text-transform:uppercase; letter-spacing:1px;">
+              &#9673; BUILT TO LAST
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

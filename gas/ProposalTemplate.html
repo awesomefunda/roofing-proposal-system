@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    color: #333333;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+  table { border-collapse: collapse; }
+  p     { margin: 0; }
+</style>
+</head>
+<body>
+
+<table width="760" cellpadding="0" cellspacing="0" align="center">
+<tr><td>
+
+  <!-- ═══════════════════════════════════════════
+       HEADER — Logo  |  divider  |  Contact info
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0">
+    <tr>
+      <td width="210" valign="middle"
+          style="border-right:2px solid #dddddd; padding:20px 16px 16px 0;">
+        {{LOGO_HTML}}
+      </td>
+      <td valign="middle" style="padding:20px 0 16px 24px;">
+        <p style="font-size:16px; font-weight:bold; color:#0d2240; margin-bottom:10px;">{{OWNER_NAME}}</p>
+        <p style="font-size:13px; color:#333333; margin-bottom:5px;">&#9679; &nbsp;{{COMPANY_PHONE}}</p>
+        <p style="font-size:13px; color:#333333; margin-bottom:5px;">&#9679; &nbsp;{{COMPANY_EMAIL}}</p>
+        <p style="font-size:13px; color:#333333;">&#9679; &nbsp;Licensed &amp; Insured &nbsp; Lic # {{COMPANY_LICENSE}}</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       CLIENT  |  ESTIMATE INFORMATION
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+    <tr valign="top">
+
+      <!-- CLIENT -->
+      <td width="365" style="border:1px solid #cccccc; padding:14px 16px;">
+        <p style="font-size:11px; font-weight:bold; color:#2e7d32;
+           text-transform:uppercase; letter-spacing:1px;
+           border-bottom:2px solid #2e7d32; padding-bottom:5px; margin-bottom:8px;">
+          Client
+        </p>
+        <p style="font-size:14px; font-weight:bold; color:#0d2240; margin-bottom:8px;">{{CLIENT_NAME}}</p>
+        <p style="font-size:12px; color:#444444; margin-bottom:4px;">&#9679; &nbsp;{{CLIENT_ADDRESS}}</p>
+        <p style="font-size:12px; color:#444444; margin-bottom:4px;">&#9679; &nbsp;Email: {{CLIENT_EMAIL}}</p>
+        <p style="font-size:12px; color:#444444;">&#9679; &nbsp;Phone: {{CLIENT_PHONE}}</p>
+      </td>
+
+      <td width="30"></td>
+
+      <!-- ESTIMATE INFO -->
+      <td width="365" style="border:1px solid #cccccc; padding:14px 16px;">
+        <p style="font-size:11px; font-weight:bold; color:#2e7d32;
+           text-transform:uppercase; letter-spacing:1px;
+           border-bottom:2px solid #2e7d32; padding-bottom:5px; margin-bottom:8px;">
+          Estimate Information
+        </p>
+        <table width="100%" cellpadding="4" cellspacing="0" style="font-size:12px;">
+          <tr>
+            <td style="color:#555555; font-weight:bold; width:90px;">Date:</td>
+            <td style="color:#333333;">{{DATE}}</td>
+          </tr>
+          <tr>
+            <td style="color:#555555; font-weight:bold;">Estimate #:</td>
+            <td style="color:#0d2240; font-weight:bold;">{{ESTIMATE_NUM}}</td>
+          </tr>
+          <tr>
+            <td style="color:#555555; font-weight:bold;">Project:</td>
+            <td>Roof Replacement</td>
+          </tr>
+          <tr>
+            <td style="color:#555555; font-weight:bold;">Property:</td>
+            <td>{{CLIENT_ADDRESS}}</td>
+          </tr>
+          {{ESTIMATE_EXTRA_ROWS}}
+        </table>
+      </td>
+
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       NAVY BANNER
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:14px;">
+    <tr>
+      <td bgcolor="#0d2240" style="padding:13px 20px;">
+        <span style="color:#ffffff; font-size:15px; font-weight:bold;
+              text-transform:uppercase; letter-spacing:1px;">
+          &#9776; &nbsp;ESTIMATE &amp; PROPOSAL FOR ROOF REPLACEMENT
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Intro -->
+  <p style="font-size:13px; color:#444444; margin:12px 0 0;">
+    We are pleased to provide the following estimate for your roof replacement project.
+  </p>
+
+  <!-- ═══════════════════════════════════════════
+       SCOPE OF WORK
+       ═══════════════════════════════════════════ -->
+  <p style="font-size:13px; font-weight:bold; color:#2e7d32; margin:14px 0 8px;">
+    &#9874; &nbsp;SCOPE OF WORK
+  </p>
+  <table width="760" cellpadding="0" cellspacing="0">
+    <tbody>
+      {{LINE_ITEMS}}
+    </tbody>
+  </table>
+
+  {{NOTES_HTML}}
+
+  <!-- ═══════════════════════════════════════════
+       TOTAL BAR
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+    <tr valign="middle">
+      <td width="430" bgcolor="#2e7d32" style="padding:16px 20px;">
+        <p style="color:#ffffff; font-size:11px; font-weight:bold;
+           text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
+          Total Cost of Materials, Labor &amp; Permit Fees
+        </p>
+        <p style="color:#ffffff; font-size:36px; font-weight:bold;">{{TOTAL}}</p>
+      </td>
+      <td width="330" bgcolor="#e8f5e9"
+          style="padding:16px 20px; text-align:center;
+                 border:2px solid #2e7d32; border-left:none;">
+        <p style="font-size:28px; color:#2e7d32; margin-bottom:6px;">&#10003;</p>
+        <p style="font-size:11px; font-weight:bold; color:#2e7d32; line-height:1.8;">
+          QUALITY WORK.<br>RELIABLE SERVICE.<br>PEACE OF MIND.
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       DISCLAIMER
+       ═══════════════════════════════════════════ -->
+  <p style="font-size:11px; color:#555555; margin:14px 0 0; line-height:1.9;">
+    If you have any questions or concerns, do not hesitate to ask.<br>
+    If you agree to this estimate and proposal, please sign below.<br>
+    Any additional rotted wood would be charged {{ROTTED_WOOD_RATE}}.
+  </p>
+
+  <!-- ═══════════════════════════════════════════
+       SIGNATURE ROW
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:22px;">
+    <tr valign="bottom">
+
+      <!-- Homeowner sig line -->
+      <td width="400">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="border-bottom:1px solid #333333; height:32px;"></td></tr>
+          <tr><td style="font-size:11px; color:#666666; padding-top:4px;">
+            Homeowner Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: ___________
+          </td></tr>
+        </table>
+      </td>
+
+      <td width="20"></td>
+
+      <!-- Owner sign-off -->
+      <td width="340" style="text-align:right;">
+        <p style="font-size:13px; font-weight:bold; color:#2e7d32; margin-bottom:6px;">
+          Thank you for your business!
+        </p>
+        <p style="font-size:22px; font-style:italic; color:#0d2240;
+           font-family:Georgia, serif; margin-bottom:4px;">
+          {{OWNER_NAME}}
+        </p>
+        <p style="font-size:11px; color:#555555;">
+          Owner<br>{{COMPANY_NAME}}
+        </p>
+      </td>
+
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════ -->
+  <table width="760" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+    <tr>
+      <td bgcolor="#0d2240" style="padding:12px 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td align="center"
+                style="color:#aac4ff; font-size:11px; font-weight:bold;
+                       text-transform:uppercase; letter-spacing:1px;">
+              &#9673; LICENSED &amp; INSURED
+            </td>
+            <td align="center"
+                style="color:#aac4ff; font-size:11px; font-weight:bold;
+                       text-transform:uppercase; letter-spacing:1px;">
+              &#9673; QUALITY CRAFTSMANSHIP
+            </td>
+            <td align="center"
+                style="color:#aac4ff; font-size:11px; font-weight:bold;
+                       text-transform:uppercase; letter-spacing:1px;">
+              &#9673; BUILT TO LAST
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>
