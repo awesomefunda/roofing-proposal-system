@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roofing Proposals</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { navy: '#0d2240', forest: '#2e7d32', 'forest-light': '#e8f5e9' } } }
+    }
+  </script>
+  <style>
+    [x-cloak] { display: none; }
+    .tab-active   { border-bottom: 3px solid #2e7d32; color: #2e7d32; font-weight: 600; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    .fade-in      { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
+<header class="bg-navy text-white shadow-lg sticky top-0 z-10">
+  <div class="max-w-2xl mx-auto px-4 py-3 flex justify-between items-center">
+    <div>
+      <p class="text-lg font-bold leading-tight" id="headerCompany">Loading…</p>
+      <p class="text-blue-200 text-xs" id="headerTagline"></p>
+    </div>
+    <button onclick="App.showTab('settings')"
+            class="text-blue-200 hover:text-white text-sm flex items-center gap-1 transition">
+      ⚙ Settings
+    </button>
+  </div>
+</header>
+
+<!-- ══ PIN GATE ═══════════════════════════════════════════ -->
+<div id="viewPin" class="hidden fade-in">
+  <div class="max-w-xs mx-auto px-4 py-16">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-7 text-center">
+      <div class="text-4xl mb-3">🔐</div>
+      <h2 class="text-lg font-bold text-navy mb-1">Contractor Access</h2>
+      <p class="text-sm text-gray-400 mb-6">Enter your PIN to unlock the app</p>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="8"
+             placeholder="• • • •"
+             class="w-full text-center text-2xl tracking-widest border border-gray-200 rounded-xl px-4 py-3 mb-3 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
+             onkeydown="if(event.key==='Enter') App.verifyPin()">
+      <div id="pinError" class="hidden text-red-600 text-xs mb-3">Incorrect PIN. Please try again.</div>
+      <button onclick="App.verifyPin()" id="btnPin"
+              class="w-full bg-navy hover:bg-blue-900 text-white font-semibold py-3 rounded-xl text-sm transition">
+        Unlock →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOADING ════════════════════════════════════════════ -->
+<div id="viewLoading" class="flex flex-col items-center justify-center py-24 text-gray-400">
+  <div class="text-5xl mb-4 animate-spin">⏳</div>
+  <p class="text-sm">Loading…</p>
+</div>
+
+<!-- ══ SETUP (first run) ══════════════════════════════════ -->
+<div id="viewSetup" class="hidden max-w-2xl mx-auto px-4 py-6 fade-in">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <h2 class="text-xl font-bold text-navy mb-1">Welcome! Let's get you set up.</h2>
+    <p class="text-sm text-gray-500 mb-6">Enter your company details. This takes about 2 minutes and only needs to be done once.</p>
+
+    <div class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Company Name *</label>
+          <input id="s_companyName" type="text" placeholder="Omar's Roofing LLC"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Owner Name</label>
+          <input id="s_ownerName" type="text" placeholder="Omar Lopez"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Phone</label>
+          <input id="s_phone" type="tel" placeholder="(555) 123-4567"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Email (receives copies)</label>
+          <input id="s_email" type="email" placeholder="omar@roofing.com"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">License #</label>
+          <input id="s_license" type="text" placeholder="CA-123456"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Tagline</label>
+          <input id="s_tagline" type="text" placeholder="Licensed &amp; Insured"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+      </div>
+
+      <div class="bg-forest-light border border-green-200 rounded-lg p-4 mt-2">
+        <p class="text-xs font-semibold text-forest mb-1">✅ Doc templates are created automatically</p>
+        <p class="text-xs text-gray-600">On first save, two Google Docs (Proposal + Invoice) will be auto-generated in your Proposals folder. You can customize them anytime in Google Docs.</p>
+      </div>
+
+      <div id="setupError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3"></div>
+
+      <button onclick="App.saveSetup()"
+              class="w-full bg-forest hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition text-sm mt-2"
+              id="btnSetup">
+        Save &amp; Create Templates →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ════════════════════════════════════════════ -->
+<div id="viewMain" class="hidden max-w-2xl mx-auto px-4 py-4 fade-in">
+
+  <!-- Tab bar -->
+  <div class="flex border-b border-gray-200 mb-4 bg-white rounded-t-xl shadow-sm">
+    <button onclick="App.showTab('proposal')" id="tab-proposal"
+            class="flex-1 py-3 text-sm tab-active transition">✏️ New Proposal</button>
+    <button onclick="App.showTab('leads')" id="tab-leads"
+            class="flex-1 py-3 text-sm tab-inactive transition">📋 Leads</button>
+    <button onclick="App.showTab('settings')" id="tab-settings"
+            class="flex-1 py-3 text-sm tab-inactive transition">⚙ Settings</button>
+  </div>
+
+  <!-- ─── PROPOSAL TAB ─────────────────────────────────── -->
+  <div id="panel-proposal" class="space-y-4">
+
+    <!-- Load Previous Estimate -->
+    <div class="bg-white rounded-2xl shadow-sm border border-dashed border-gray-200 p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Load from Previous Estimate</p>
+      <div class="flex gap-2">
+        <select id="prevEstimateSelect"
+                class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest text-gray-600">
+          <option value="">— Select a previous estimate to pre-fill —</option>
+        </select>
+        <button onclick="App.loadPreviousEstimate()"
+                class="bg-forest-light text-forest border border-green-200 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-100 transition whitespace-nowrap">
+          Load →
+        </button>
+      </div>
+      <p id="loadPrevNote" class="hidden text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-1.5 mt-2">
+        ⚠️ Loaded with <strong>original quoted prices</strong> — not current catalog prices.
+      </p>
+    </div>
+
+    <!-- Client Info -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-sm font-bold text-navy uppercase tracking-wide mb-4">Client Information</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Full Name *</label>
+          <input id="f_clientName" type="text" placeholder="Jane Smith"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Property Address</label>
+          <input id="f_clientAddress" type="text" placeholder="123 Main St, City, CA 90210"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
+          <input id="f_clientPhone" type="tel" placeholder="(555) 000-0000"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Email (for PDF delivery)</label>
+          <input id="f_clientEmail" type="email" placeholder="jane@email.com"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Details -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-sm font-bold text-navy uppercase tracking-wide mb-4">Project Details</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Roof Type</label>
+          <select id="f_roofType"
+                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Sq Ft</label>
+          <input id="f_sqft" type="number" placeholder="1200"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Warranty</label>
+          <select id="f_warranty"
+                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </select>
+        </div>
+        <div class="col-span-2 sm:col-span-4">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Color Choice</label>
+          <input id="f_colorChoice" type="text" placeholder="Charcoal, Slate Grey, etc."
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+        </div>
+      </div>
+    </div>
+
+    <!-- Scope of Work -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-sm font-bold text-navy uppercase tracking-wide mb-1">Scope of Work</h3>
+      <p class="text-xs text-gray-400 mb-4">Check all items to include. Each checked item becomes a numbered line in the proposal.</p>
+
+      <div id="catalogContainer" class="space-y-4">
+        <p class="text-xs text-gray-400">Loading catalog…</p>
+      </div>
+
+      <!-- Custom items -->
+      <div class="mt-4 border-t border-gray-100 pt-4">
+        <p class="text-xs font-semibold text-gray-500 mb-2">+ Custom Line Item</p>
+        <div class="flex gap-2">
+          <input id="customItemDesc" type="text" placeholder="Describe the work…"
+                 class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          <button onclick="App.addCustomItem()"
+                  class="bg-forest-light text-forest border border-green-300 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-100 transition">
+            Add
+          </button>
+        </div>
+        <div id="customItemsList" class="mt-2 space-y-1"></div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-sm font-bold text-navy uppercase tracking-wide mb-3">Notes (optional)</h3>
+      <textarea id="f_notes" rows="3" placeholder="Any special conditions, payment terms, etc."
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest resize-none"></textarea>
+    </div>
+
+    <!-- Total + Submit -->
+    <div class="bg-forest rounded-2xl shadow-sm p-5 text-white">
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-sm font-semibold uppercase tracking-wide opacity-75">Total Amount</span>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl font-bold opacity-75">$</span>
+          <input id="f_total" type="number" placeholder="0" step="50"
+                 class="w-36 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg px-3 py-2 text-2xl font-bold text-white placeholder-white placeholder-opacity-50 text-right focus:outline-none focus:ring-2 focus:ring-white">
+        </div>
+      </div>
+
+      <div id="submitError" class="hidden bg-red-100 text-red-800 text-xs rounded-lg px-3 py-2 mb-3"></div>
+
+      <button onclick="App.submitProposal()" id="btnSubmit"
+              class="w-full bg-white text-forest font-bold py-3 rounded-xl text-sm hover:bg-green-50 transition shadow">
+        ✍️ Create Proposal &amp; Send Signing Link
+      </button>
+      <p class="text-center text-xs opacity-60 mt-2">Doc saved to Drive · Signing link emailed · Lead logged</p>
+    </div>
+
+    <!-- Success message -->
+    <div id="successBox" class="hidden bg-white border border-green-200 rounded-2xl p-5 fade-in">
+      <div class="text-center mb-4">
+        <div class="text-4xl mb-2">✅</div>
+        <h3 class="font-bold text-forest text-lg">Proposal Created!</h3>
+        <p class="text-gray-500 text-sm" id="successEstNum"></p>
+      </div>
+
+      <!-- Signing link (primary CTA) -->
+      <div id="successSigningBlock" class="hidden mb-3">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Client Signing Link</p>
+        <div class="flex gap-2">
+          <input id="successSigningUrl" type="text" readonly
+                 class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono bg-gray-50 text-gray-700 focus:outline-none">
+          <button onclick="App.copySigningLink()"
+                  class="bg-forest text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition whitespace-nowrap"
+                  id="btnCopyLink">Copy</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">The client will receive this link by email. They can also open it on mobile to sign.</p>
+      </div>
+      <div id="successNoEmailNote" class="hidden bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded-lg px-3 py-2 mb-3">
+        ⚠️ No client email was provided — the signing link was not emailed. Share the link above manually.
+      </div>
+      <div id="successEmailWarning" class="hidden bg-orange-50 border border-orange-200 text-orange-800 text-xs rounded-lg px-3 py-2 mb-3"></div>
+
+      <div class="space-y-2">
+        <a id="successDocUrl" href="#" target="_blank"
+           class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition">
+          <span class="text-sm font-medium text-gray-700">✏️ Edit Proposal in Google Docs</span>
+          <span class="text-xs text-gray-400">↗</span>
+        </a>
+      </div>
+      <button onclick="App.resetForm()"
+              class="w-full mt-4 border border-forest text-forest font-semibold py-2.5 rounded-xl text-sm hover:bg-forest-light transition">
+        + New Proposal
+      </button>
+    </div>
+
+  </div><!-- end panel-proposal -->
+
+  <!-- ─── LEADS TAB ──────────────────────────────────────── -->
+  <div id="panel-leads" class="hidden fade-in">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="flex justify-between items-center px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-navy uppercase tracking-wide">All Leads</h3>
+        <button onclick="App.loadLeads()" class="text-xs text-forest font-medium hover:underline">↻ Refresh</button>
+      </div>
+      <div id="leadsContainer" class="divide-y divide-gray-50">
+        <p class="text-center text-gray-400 text-sm py-10">Loading leads…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SETTINGS TAB ───────────────────────────────────── -->
+  <div id="panel-settings" class="hidden fade-in">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-sm font-bold text-navy uppercase tracking-wide mb-4">Company Settings</h3>
+      <div class="space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Company Name *</label>
+            <input id="st_companyName" type="text"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Owner Name</label>
+            <input id="st_ownerName" type="text"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Tagline</label>
+            <input id="st_tagline" type="text"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
+            <input id="st_phone" type="tel"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+            <input id="st_email" type="email"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">License #</label>
+            <input id="st_license" type="text"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Default Warranty</label>
+            <input id="st_warranty" type="text"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Rotted Wood Rate</label>
+            <input id="st_rottedWood" type="text" placeholder="$26.00 per foot"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          </div>
+        </div>
+
+        <div class="border-t border-gray-100 pt-3">
+          <p class="text-xs font-semibold text-gray-500 mb-2">Contractor PIN
+            <span class="font-normal text-gray-400">(leave blank to keep current)</span></p>
+          <input id="st_appPin" type="password" inputmode="numeric" maxlength="8"
+                 placeholder="Enter new PIN to change…"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+          <p class="text-xs text-gray-400 mt-1">Default PIN is 4766. Change it here and save settings.</p>
+        </div>
+
+        <div class="border-t border-gray-100 pt-3">
+          <p class="text-xs font-semibold text-gray-500 mb-2">Doc Template IDs
+            <span class="font-normal text-gray-400">(leave blank to auto-generate)</span></p>
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Proposal Template Doc ID</label>
+              <input id="st_proposalDocId" type="text" placeholder="Paste Google Doc ID…"
+                     class="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Invoice Template Doc ID</label>
+              <input id="st_invoiceDocId" type="text" placeholder="Paste Google Doc ID…"
+                     class="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest">
+            </div>
+          </div>
+        </div>
+
+        <div id="settingsError"  class="hidden bg-red-50  border border-red-200  text-red-700  text-sm rounded-lg px-4 py-3"></div>
+        <div id="settingsSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3"></div>
+
+        <button onclick="App.saveSettings()" id="btnSaveSettings"
+                class="w-full bg-forest hover:bg-green-700 text-white font-semibold py-3 rounded-xl text-sm transition">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end viewMain -->
+
+<!-- ══ INVOICE MODAL ══════════════════════════════════════ -->
+<div id="invoiceModal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 fade-in">
+    <h3 class="font-bold text-navy text-lg mb-1">Generate Invoice</h3>
+    <p class="text-sm text-gray-500 mb-4" id="invoiceModalClient"></p>
+    <p class="text-xs text-gray-400 mb-5">This will create an invoice PDF from the existing proposal data. No re-entry needed.</p>
+    <div id="invoiceModalError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2 mb-4"></div>
+    <div class="flex gap-3">
+      <button onclick="App.closeInvoiceModal()"
+              class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+        Cancel
+      </button>
+      <button onclick="App.confirmInvoice()" id="btnConfirmInvoice"
+              class="flex-1 bg-navy text-white py-2.5 rounded-xl text-sm font-bold hover:bg-blue-900 transition">
+        Generate
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ JAVASCRIPT ══════════════════════════════════════════ -->
+<script>
+const App = (function() {
+  let state = {};
+  let customItems = [];
+  let invoiceTargetRow = null;
+
+  // ── Boot ──────────────────────────────────────────────────
+  function init() {
+    google.script.run
+      .withSuccessHandler(onStateLoaded)
+      .withFailureHandler(err => {
+        document.getElementById('viewLoading').innerHTML =
+          '<p class="text-red-500 text-sm mt-20 text-center">⚠️ ' + err.message + '</p>';
+      })
+      .getAppState();
+  }
+
+  function onStateLoaded(s) {
+    state = s;
+    document.getElementById('viewLoading').classList.add('hidden');
+
+    document.getElementById('headerCompany').textContent = s.companyName || 'Roofing Proposals';
+    document.getElementById('headerTagline').textContent  = s.companyTagline || '';
+
+    if (!s.setupComplete) {
+      document.getElementById('viewSetup').classList.remove('hidden');
+      return;
+    }
+
+    // PIN gate — check sessionStorage first so verified contractors don't
+    // re-enter their PIN on every page reload within the same session.
+    if (sessionStorage.getItem('pinVerified') !== '1') {
+      document.getElementById('viewPin').classList.remove('hidden');
+      return;
+    }
+
+    unlockMainApp();
+  }
+
+  function unlockMainApp() {
+    document.getElementById('viewMain').classList.remove('hidden');
+    document.getElementById('viewPin').classList.add('hidden');
+    populateDropdowns();
+    populateCatalog();
+    populateLoadPrevDropdown();
+    showTab('proposal');
+  }
+
+  function verifyPin() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!pin) return;
+    const btn = document.getElementById('btnPin');
+    btn.textContent = '…'; btn.disabled = true;
+    document.getElementById('pinError').classList.add('hidden');
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.textContent = 'Unlock →'; btn.disabled = false;
+        if (result && result.success) {
+          sessionStorage.setItem('pinVerified', '1');
+          unlockMainApp();
+        } else {
+          document.getElementById('pinError').classList.remove('hidden');
+          document.getElementById('pinInput').value = '';
+          document.getElementById('pinInput').focus();
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.textContent = 'Unlock →'; btn.disabled = false;
+        document.getElementById('pinError').textContent = err.message || 'Error verifying PIN.';
+        document.getElementById('pinError').classList.remove('hidden');
+      })
+      .verifyContractorPin(pin);
+  }
+
+  // ── Dropdowns ─────────────────────────────────────────────
+  function populateDropdowns() {
+    const roofSel    = document.getElementById('f_roofType');
+    const warrantySel = document.getElementById('f_warranty');
+    roofSel.innerHTML    = (state.roofTypes    || []).map(t => `<option>${t}</option>`).join('');
+    warrantySel.innerHTML = (state.warrantyOptions || []).map(w =>
+      `<option ${w === state.defaultWarranty ? 'selected' : ''}>${w}</option>`).join('');
+  }
+
+  // ── Catalog ────────────────────────────────────────────────
+  function populateCatalog() {
+    const container = document.getElementById('catalogContainer');
+    const items = state.catalog || [];
+    if (!items.length) {
+      container.innerHTML = '<p class="text-xs text-gray-400">No catalog items found. Add items to the Catalog sheet.</p>';
+      return;
+    }
+
+    // Group by category
+    const grouped = {};
+    items.forEach(item => {
+      if (!grouped[item.category]) grouped[item.category] = [];
+      grouped[item.category].push(item);
+    });
+
+    container.innerHTML = Object.keys(grouped).map(cat => `
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">${cat}</p>
+        <div class="space-y-2">
+          ${grouped[cat].map(item => `
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" class="catalog-item mt-0.5 rounded accent-forest"
+                     data-desc="${esc(item.description)}"
+                     data-price="${item.price}">
+              <span class="text-sm text-gray-700 group-hover:text-gray-900 flex-1">${esc(item.description)}</span>
+              ${item.price ? `<span class="text-xs text-gray-400 font-medium">$${item.price.toLocaleString()}</span>` : ''}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Load Previous Estimate ────────────────────────────────
+  function populateLoadPrevDropdown() {
+    const select = document.getElementById('prevEstimateSelect');
+    const leads  = state.recentLeads || [];
+    select.innerHTML = '<option value="">— Select a previous estimate to pre-fill —</option>';
+    leads.forEach(function(lead) {
+      const opt = document.createElement('option');
+      opt.value = lead.rowId;
+      opt.textContent = esc(lead.clientName) + ' · $' + Number(lead.total).toLocaleString() +
+                        (lead.timestamp ? ' (' + lead.timestamp + ')' : '') +
+                        (lead.estNum    ? ' · ' + lead.estNum : '');
+      select.appendChild(opt);
+    });
+  }
+
+  function loadPreviousEstimate() {
+    const select = document.getElementById('prevEstimateSelect');
+    const rowId  = parseInt(select.value, 10);
+    if (!rowId) return;
+
+    const btn = select.nextElementSibling;
+    btn.textContent = 'Loading…'; btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        btn.textContent = 'Load →'; btn.disabled = false;
+        if (!data) { alert('Could not load that estimate.'); return; }
+        rehydrateForm(data);
+      })
+      .withFailureHandler(function(err) {
+        btn.textContent = 'Load →'; btn.disabled = false;
+        alert('Load failed: ' + err.message);
+      })
+      .getLeadData(rowId);
+  }
+
+  // Re-hydrate the form from a previous estimate.
+  // CRITICAL: Uses stored prices from LINE_ITEMS JSON —
+  // NOT current catalog prices — so old quotes aren't recalculated.
+  function rehydrateForm(data) {
+    document.getElementById('f_clientName').value    = data.clientName    || '';
+    document.getElementById('f_clientAddress').value = data.clientAddress || '';
+    document.getElementById('f_clientPhone').value   = data.clientPhone   || '';
+    document.getElementById('f_clientEmail').value   = data.clientEmail   || '';
+    document.getElementById('f_sqft').value          = data.sqft          || '';
+    document.getElementById('f_colorChoice').value   = data.colorChoice   || '';
+    document.getElementById('f_notes').value         = data.notes         || '';
+    document.getElementById('f_total').value         = data.total         || '';
+
+    // Set selects if matching options exist
+    const roofSel = document.getElementById('f_roofType');
+    if (data.roofType) {
+      Array.from(roofSel.options).forEach(function(o) {
+        if (o.value === data.roofType) o.selected = true;
+      });
+    }
+    const warSel = document.getElementById('f_warranty');
+    if (data.warranty) {
+      Array.from(warSel.options).forEach(function(o) {
+        if (o.value === data.warranty) o.selected = true;
+      });
+    }
+
+    // Uncheck all catalog items first
+    document.querySelectorAll('.catalog-item').forEach(function(cb) { cb.checked = false; });
+    customItems = [];
+
+    // Re-check items using STORED historical prices (not current catalog prices)
+    const storedItems = data.lineItems || [];
+    storedItems.forEach(function(stored) {
+      const match = Array.from(document.querySelectorAll('.catalog-item'))
+        .find(function(cb) { return cb.dataset.desc === stored.description; });
+
+      if (match) {
+        match.checked = true;
+        // Override current catalog price with the original quoted price
+        match.dataset.price = stored.price || 0;
+        // Visually flag historical price
+        const priceSpan = match.closest('label') && match.closest('label').querySelector('.catalog-price');
+        if (priceSpan) {
+          priceSpan.textContent = stored.price ? '$' + Number(stored.price).toLocaleString() : '';
+          priceSpan.classList.add('text-yellow-600', 'line-through-none');
+          priceSpan.title = 'Original quoted price (may differ from current catalog)';
+        }
+      } else {
+        // Item no longer in catalog — add as custom
+        if (stored.description) customItems.push(stored.description);
+      }
+    });
+
+    renderCustomItems();
+
+    // Show historical price warning
+    document.getElementById('loadPrevNote').classList.remove('hidden');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Custom items ──────────────────────────────────────────
+  function addCustomItem() {
+    const input = document.getElementById('customItemDesc');
+    const desc  = input.value.trim();
+    if (!desc) return;
+    customItems.push(desc);
+    input.value = '';
+    renderCustomItems();
+  }
+
+  function renderCustomItems() {
+    document.getElementById('customItemsList').innerHTML = customItems.map((d, i) => `
+      <div class="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+        <span class="flex-1 text-sm text-gray-700">${esc(d)}</span>
+        <button onclick="App.removeCustomItem(${i})" class="text-gray-400 hover:text-red-500 text-xs font-bold">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function removeCustomItem(i) {
+    customItems.splice(i, 1);
+    renderCustomItems();
+  }
+
+  // ── Collect form data ─────────────────────────────────────
+  function getFormPayload() {
+    const checkedItems = Array.from(document.querySelectorAll('.catalog-item:checked')).map(cb => ({
+      description: cb.dataset.desc,
+      price:       Number(cb.dataset.price) || 0,
+    }));
+    const allItems = [...checkedItems, ...customItems.map(d => ({ description: d, price: 0 }))];
+
+    return {
+      clientName:    document.getElementById('f_clientName').value.trim(),
+      clientAddress: document.getElementById('f_clientAddress').value.trim(),
+      clientPhone:   document.getElementById('f_clientPhone').value.trim(),
+      clientEmail:   document.getElementById('f_clientEmail').value.trim(),
+      roofType:      document.getElementById('f_roofType').value,
+      sqft:          document.getElementById('f_sqft').value,
+      warranty:      document.getElementById('f_warranty').value,
+      colorChoice:   document.getElementById('f_colorChoice').value.trim(),
+      notes:         document.getElementById('f_notes').value.trim(),
+      total:         document.getElementById('f_total').value,
+      lineItems:     allItems,
+    };
+  }
+
+  // ── Submit proposal ───────────────────────────────────────
+  function submitProposal() {
+    const payload = getFormPayload();
+
+    if (!payload.clientName) return showSubmitError('Client name is required.');
+    if (!payload.total || Number(payload.total) <= 0) return showSubmitError('Enter a total amount.');
+    if (payload.clientEmail && !isValidEmail(payload.clientEmail)) return showSubmitError('Enter a valid email address.');
+    if (payload.lineItems.length === 0) return showSubmitError('Select at least one scope of work item.');
+
+    setSubmitLoading(true);
+    showSubmitError('');
+
+    google.script.run
+      .withSuccessHandler(onProposalSuccess)
+      .withFailureHandler(err => { setSubmitLoading(false); showSubmitError(err.message); })
+      .submitProposal(payload);
+  }
+
+  function onProposalSuccess(result) {
+    setSubmitLoading(false);
+
+    // Hard error (doc creation failed, validation failed, etc.) —
+    // DO NOT reset the form so the contractor can fix and retry.
+    if (result.error) {
+      showSubmitError(result.error);
+      return;
+    }
+
+    // Proposal was saved — show success box regardless of email status.
+    document.getElementById('successEstNum').textContent = 'Estimate ' + result.estimateNum;
+    document.getElementById('successDocUrl').href = result.docUrl || '#';
+
+    // Signing link
+    if (result.signingUrl) {
+      document.getElementById('successSigningUrl').value = result.signingUrl;
+      document.getElementById('successSigningBlock').classList.remove('hidden');
+    }
+
+    // Email failure (soft error) — proposal was saved, but email didn't go out.
+    // Warn the contractor so they can copy + share the signing link manually.
+    // IMPORTANT: Do NOT reset the form — the contractor may need to fix
+    // the email address and use the signing link to re-send manually.
+    if (result.emailError) {
+      const el = document.getElementById('successEmailWarning');
+      el.textContent = '⚠️ ' + result.emailError;
+      el.classList.remove('hidden');
+    }
+
+    // No email provided at all
+    const payload = getFormPayload();
+    if (!payload.clientEmail && !result.emailError) {
+      document.getElementById('successNoEmailNote').classList.remove('hidden');
+    }
+
+    document.getElementById('successBox').classList.remove('hidden');
+    document.getElementById('successBox').scrollIntoView({ behavior: 'smooth' });
+    // Form is intentionally NOT auto-reset — the contractor clicks "+ New Proposal" when ready.
+  }
+
+  function copySigningLink() {
+    const input = document.getElementById('successSigningUrl');
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.getElementById('btnCopyLink');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    }).catch(() => {
+      input.select();
+      document.execCommand('copy');
+    });
+  }
+
+  function resetForm() {
+    document.getElementById('f_clientName').value    = '';
+    document.getElementById('f_clientAddress').value = '';
+    document.getElementById('f_clientPhone').value   = '';
+    document.getElementById('f_clientEmail').value   = '';
+    document.getElementById('f_sqft').value          = '';
+    document.getElementById('f_colorChoice').value   = '';
+    document.getElementById('f_notes').value         = '';
+    document.getElementById('f_total').value         = '';
+    document.querySelectorAll('.catalog-item').forEach(cb => cb.checked = false);
+    customItems = [];
+    renderCustomItems();
+    document.getElementById('successBox').classList.add('hidden');
+    document.getElementById('successSigningBlock').classList.add('hidden');
+    document.getElementById('successNoEmailNote').classList.add('hidden');
+    document.getElementById('successEmailWarning').classList.add('hidden');
+    document.getElementById('successSigningUrl').value = '';
+    document.getElementById('loadPrevNote').classList.add('hidden');
+    document.getElementById('prevEstimateSelect').value = '';
+    showSubmitError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Leads tab ─────────────────────────────────────────────
+  function loadLeads() {
+    document.getElementById('leadsContainer').innerHTML =
+      '<p class="text-center text-gray-400 text-sm py-10">Loading…</p>';
+    google.script.run
+      .withSuccessHandler(renderLeads)
+      .withFailureHandler(() => {
+        document.getElementById('leadsContainer').innerHTML =
+          '<p class="text-center text-red-400 text-sm py-10">Could not load leads.</p>';
+      })
+      .getLeads();
+  }
+
+  function renderLeads(leads) {
+    const container = document.getElementById('leadsContainer');
+    if (!leads || !leads.length) {
+      container.innerHTML = '<p class="text-center text-gray-400 text-sm py-10">No leads yet. Submit your first proposal!</p>';
+      return;
+    }
+    container.innerHTML = leads.map(lead => {
+      const isSigned   = lead.status === 'Signed' || lead.status === 'Finalized';
+      const isAwaiting = lead.status === 'Awaiting Signature';
+
+      const docLink = lead.docUrl
+        ? `<a href="${lead.docUrl}" target="_blank" class="text-xs text-navy font-medium hover:underline">✏️ Doc</a>`
+        : '';
+      const signedLink = isSigned && lead.signedPdfUrl
+        ? `<a href="${lead.signedPdfUrl}" target="_blank" class="text-xs text-forest font-medium hover:underline">📄 Signed PDF</a>`
+        : '';
+      const invoiceLink = lead.invoiceUrl
+        ? `<a href="${lead.invoiceUrl}" target="_blank" class="text-xs text-forest font-medium hover:underline">🧾 Invoice</a>`
+        : '';
+      const invoiceBtn = !lead.invoiceUrl && isSigned
+        ? `<button onclick="App.openInvoiceModal(${lead.rowId}, '${esc(lead.clientName)}')"
+                   class="text-xs text-navy font-medium hover:underline ml-auto">Generate Invoice →</button>`
+        : '';
+      const resendBtn = isAwaiting && lead.signToken
+        ? `<button onclick="App.copySigningToken('${esc(lead.signToken)}')"
+                   class="text-xs text-yellow-700 font-medium hover:underline ml-auto">Copy Sign Link</button>`
+        : '';
+
+      return `
+      <div class="px-5 py-4">
+        <div class="flex justify-between items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-gray-800 truncate">${esc(lead.clientName)}</p>
+            <p class="text-xs text-gray-400">${lead.timestamp} · ${lead.clientPhone || lead.clientEmail || ''}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="font-bold text-forest text-sm">$${Number(lead.total || 0).toLocaleString()}</p>
+            <span class="text-xs px-2 py-0.5 rounded-full ${statusBadge(lead.status)}">${lead.status || '—'}</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-3">
+          ${docLink}${signedLink}${invoiceLink}${resendBtn}${invoiceBtn}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function statusBadge(status) {
+    if (status === 'Signed'    || status === 'Finalized')    return 'bg-green-100 text-green-800 font-semibold';
+    if (status === 'Invoiced')                               return 'bg-blue-100 text-blue-700';
+    if (status === 'Awaiting Signature')                     return 'bg-yellow-100 text-yellow-800';
+    if (status === 'Proposal Sent')                          return 'bg-green-100 text-green-700';
+    return 'bg-gray-100 text-gray-600';
+  }
+
+  // ── Invoice modal ─────────────────────────────────────────
+  function openInvoiceModal(rowId, clientName) {
+    invoiceTargetRow = rowId;
+    document.getElementById('invoiceModalClient').textContent = 'Client: ' + clientName;
+    document.getElementById('invoiceModalError').classList.add('hidden');
+    document.getElementById('btnConfirmInvoice').textContent = 'Generate';
+    document.getElementById('invoiceModal').classList.remove('hidden');
+  }
+
+  function closeInvoiceModal() {
+    invoiceTargetRow = null;
+    document.getElementById('invoiceModal').classList.add('hidden');
+  }
+
+  function confirmInvoice() {
+    if (!invoiceTargetRow) return;
+    const btn = document.getElementById('btnConfirmInvoice');
+    btn.textContent = 'Generating…';
+    btn.disabled = true;
+    document.getElementById('invoiceModalError').classList.add('hidden');
+
+    google.script.run
+      .withSuccessHandler(result => {
+        btn.disabled = false;
+        if (result.error) {
+          document.getElementById('invoiceModalError').textContent = result.error;
+          document.getElementById('invoiceModalError').classList.remove('hidden');
+          btn.textContent = 'Generate';
+          return;
+        }
+        closeInvoiceModal();
+        window.open(result.pdfUrl, '_blank');
+        loadLeads(); // refresh list
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+        document.getElementById('invoiceModalError').textContent = err.message;
+        document.getElementById('invoiceModalError').classList.remove('hidden');
+      })
+      .generateInvoiceFromRow(invoiceTargetRow);
+  }
+
+  // ── Settings tab ──────────────────────────────────────────
+  function populateSettings() {
+    document.getElementById('st_companyName').value  = state.companyName  || '';
+    document.getElementById('st_ownerName').value    = state.ownerName    || '';
+    document.getElementById('st_phone').value        = state.companyPhone || '';
+    document.getElementById('st_email').value        = state.companyEmail || '';
+    document.getElementById('st_license').value      = state.companyLicense || '';
+    document.getElementById('st_tagline').value      = state.companyTagline || '';
+    document.getElementById('st_warranty').value     = state.defaultWarranty || '';
+    document.getElementById('st_rottedWood').value   = state.rottedWoodRate || '';
+    document.getElementById('st_proposalDocId').value = state.proposalTemplateDocId || '';
+    document.getElementById('st_invoiceDocId').value  = state.invoiceTemplateDocId  || '';
+  }
+
+  function saveSettings() {
+    const payload = {
+      companyName:            document.getElementById('st_companyName').value.trim(),
+      ownerName:              document.getElementById('st_ownerName').value.trim(),
+      companyPhone:           document.getElementById('st_phone').value.trim(),
+      companyEmail:           document.getElementById('st_email').value.trim(),
+      companyLicense:         document.getElementById('st_license').value.trim(),
+      companyTagline:         document.getElementById('st_tagline').value.trim(),
+      defaultWarranty:        document.getElementById('st_warranty').value.trim(),
+      rottedWoodRate:         document.getElementById('st_rottedWood').value.trim(),
+      proposalTemplateDocId:  document.getElementById('st_proposalDocId').value.trim(),
+      invoiceTemplateDocId:   document.getElementById('st_invoiceDocId').value.trim(),
+      appPin:                 document.getElementById('st_appPin').value.trim(),
+    };
+    if (!payload.companyName) {
+      showSettingsMsg('Company name is required.', 'error'); return;
+    }
+    const btn = document.getElementById('btnSaveSettings');
+    btn.textContent = 'Saving…'; btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(result => {
+        btn.textContent = 'Save Settings'; btn.disabled = false;
+        if (result.error) { showSettingsMsg(result.error, 'error'); return; }
+        showSettingsMsg('✅ Settings saved!', 'success');
+        // Update local state header
+        document.getElementById('headerCompany').textContent = payload.companyName;
+        state.companyName = payload.companyName;
+        if (result.proposalDocId) {
+          document.getElementById('st_proposalDocId').value = result.proposalDocId;
+          state.proposalTemplateDocId = result.proposalDocId;
+        }
+        if (result.invoiceDocId) {
+          document.getElementById('st_invoiceDocId').value = result.invoiceDocId;
+          state.invoiceTemplateDocId = result.invoiceDocId;
+        }
+      })
+      .withFailureHandler(err => {
+        btn.textContent = 'Save Settings'; btn.disabled = false;
+        showSettingsMsg(err.message, 'error');
+      })
+      .saveSettings(payload);
+  }
+
+  // ── Setup (first run) ─────────────────────────────────────
+  function saveSetup() {
+    const payload = {
+      companyName:   document.getElementById('s_companyName').value.trim(),
+      ownerName:     document.getElementById('s_ownerName').value.trim(),
+      companyPhone:  document.getElementById('s_phone').value.trim(),
+      companyEmail:  document.getElementById('s_email').value.trim(),
+      companyLicense:document.getElementById('s_license').value.trim(),
+      companyTagline:document.getElementById('s_tagline').value.trim(),
+    };
+    if (!payload.companyName) {
+      showSetupError('Company name is required.'); return;
+    }
+    const btn = document.getElementById('btnSetup');
+    btn.textContent = 'Setting up… (this may take ~30 sec)'; btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(result => {
+        if (result.error) {
+          btn.textContent = 'Save & Create Templates →'; btn.disabled = false;
+          showSetupError(result.error); return;
+        }
+        // Reload app state
+        document.getElementById('viewSetup').classList.add('hidden');
+        document.getElementById('viewLoading').classList.remove('hidden');
+        google.script.run.withSuccessHandler(onStateLoaded).getAppState();
+      })
+      .withFailureHandler(err => {
+        btn.textContent = 'Save & Create Templates →'; btn.disabled = false;
+        showSetupError(err.message);
+      })
+      .saveSettings(payload);
+  }
+
+  // ── Tab switching ─────────────────────────────────────────
+  function showTab(tab) {
+    ['proposal', 'leads', 'settings'].forEach(t => {
+      document.getElementById('panel-' + t).classList.add('hidden');
+      document.getElementById('tab-' + t).className = 'flex-1 py-3 text-sm tab-inactive transition';
+    });
+    document.getElementById('panel-' + tab).classList.remove('hidden');
+    document.getElementById('tab-' + tab).className = 'flex-1 py-3 text-sm tab-active transition';
+
+    if (tab === 'leads')    loadLeads();
+    if (tab === 'settings') populateSettings();
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function copySigningToken(token) {
+    // Build the current app URL + ?sign=token and copy it
+    // We don't have the full URL in the Leads tab, but can show the token
+    const url = window.location.href.split('?')[0] + '?sign=' + token;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Signing link copied to clipboard!');
+    }).catch(() => {
+      prompt('Copy this signing link:', url);
+    });
+  }
+
+  function setSubmitLoading(loading) {
+    const btn = document.getElementById('btnSubmit');
+    btn.textContent = loading ? 'Creating Proposal…' : '✍️ Create Proposal & Send Signing Link';
+    btn.disabled    = loading;
+  }
+
+  function showSubmitError(msg) {
+    const el = document.getElementById('submitError');
+    el.textContent = msg;
+    el.classList.toggle('hidden', !msg);
+  }
+
+  function showSetupError(msg) {
+    const el = document.getElementById('setupError');
+    el.textContent = msg;
+    el.classList.toggle('hidden', !msg);
+  }
+
+  function showSettingsMsg(msg, type) {
+    const errEl  = document.getElementById('settingsError');
+    const sucEl  = document.getElementById('settingsSuccess');
+    errEl.classList.add('hidden');
+    sucEl.classList.add('hidden');
+    if (type === 'error')   { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    if (type === 'success') { sucEl.textContent = msg; sucEl.classList.remove('hidden'); }
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Public
+  return {
+    init, showTab,
+    verifyPin,
+    addCustomItem, removeCustomItem,
+    loadPreviousEstimate,
+    submitProposal, resetForm,
+    loadLeads,
+    openInvoiceModal, closeInvoiceModal, confirmInvoice,
+    saveSettings, saveSetup,
+    copySigningLink, copySigningToken,
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', App.init);
+</script>
+</body>
+</html>

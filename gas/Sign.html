@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Your Estimate</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { navy: '#0d2240', forest: '#2e7d32', 'forest-light': '#e8f5e9' } } }
+    }
+  </script>
+  <style>
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* CRITICAL: prevent mobile scroll/zoom while drawing */
+    canvas {
+      display: block;
+      width: 100%;
+      touch-action: none;
+      cursor: crosshair;
+      border-radius: 0.5rem;
+    }
+    #canvasInitials  { height: 84px; }
+    #canvasSignature { height: 140px; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+<!--
+  SERVER-INJECTED BOOTSTRAP (minimal — no sensitive proposal data).
+  Only { valid, companyName, companyPhone } come from the server.
+  The signing token is read from window.location.search.
+  Full proposal data (total, docUrl, clientName) is returned only
+  after verifyClientAccess() passes — the email KBA step.
+-->
+<script>
+  const PAGE_DATA = <?!= pageData ?>;
+</script>
+
+<!-- ══ HEADER ════════════════════════════════════════════════ -->
+<header class="bg-navy text-white shadow-lg">
+  <div class="max-w-xl mx-auto px-5 py-4">
+    <p class="text-lg font-bold" id="hdrCompany">Loading…</p>
+    <p class="text-blue-200 text-xs">Electronic Proposal Signing</p>
+  </div>
+</header>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════ -->
+<main class="max-w-xl mx-auto px-4 py-6 space-y-4">
+
+  <!-- ── Invalid link ──────────────────────────────────────── -->
+  <div id="viewInvalid" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-red-200 p-8 text-center shadow-sm">
+      <div class="text-5xl mb-4">⚠️</div>
+      <h2 class="text-xl font-bold text-red-700 mb-2">Invalid or Expired Link</h2>
+      <p class="text-gray-500 text-sm">This signing link is not valid. It may have expired or already been used.</p>
+      <p class="text-gray-400 text-xs mt-4">Please contact the contractor for a new link.</p>
+    </div>
+  </div>
+
+  <!-- ── Email authentication (shown first, before any proposal data) ── -->
+  <div id="viewAuth" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
+      <div class="text-center mb-6">
+        <div class="text-4xl mb-3">📋</div>
+        <h2 class="text-xl font-bold text-navy">Verify Your Identity</h2>
+        <p class="text-sm text-gray-500 mt-1">
+          Enter the email address where you received this signing link.
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Email Address</label>
+          <input id="authEmail" type="email" inputmode="email"
+                 placeholder="you@example.com"
+                 class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-navy focus:ring-1 focus:ring-navy"
+                 onkeydown="if(event.key==='Enter') Sign.verifyEmail()">
+        </div>
+
+        <div id="authError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"></div>
+        <div id="authAttemptsWarning" class="hidden bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded-xl px-4 py-2">
+          ⚠️ Multiple failed attempts. Please double-check the email address you received this link at.
+        </div>
+
+        <button onclick="Sign.verifyEmail()" id="btnVerify"
+                class="w-full bg-navy hover:bg-blue-900 text-white font-semibold py-3 rounded-xl text-sm transition">
+          Verify Access →
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-gray-400 mt-5">
+        Your email is used only to verify your identity and will not be shared.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Already signed ────────────────────────────────────── -->
+  <div id="viewAlreadySigned" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-green-200 p-8 text-center shadow-sm">
+      <div class="text-5xl mb-4">✅</div>
+      <h2 class="text-xl font-bold text-forest mb-2">Already Signed</h2>
+      <p class="text-gray-500 text-sm mb-4">This proposal has already been signed. Your signed copy was emailed to you.</p>
+      <a id="alreadySignedPdfLink" href="#" target="_blank"
+         class="inline-block bg-forest text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-green-700 transition">
+        📄 View Signed PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Signing form (revealed after KBA) ─────────────────── -->
+  <div id="viewSign" class="hidden space-y-4 fade-in">
+
+    <!-- Proposal summary -->
+    <div class="bg-navy text-white rounded-2xl shadow p-5">
+      <p class="text-blue-200 text-xs uppercase tracking-wide mb-1">Estimate</p>
+      <p class="text-lg font-bold" id="cardEstNum">—</p>
+      <p class="text-blue-100 text-sm mt-1" id="cardClientName"></p>
+      <div class="mt-4 flex items-end justify-between">
+        <div>
+          <p class="text-blue-200 text-xs uppercase tracking-wide">Total Amount</p>
+          <p class="text-3xl font-extrabold mt-0.5" id="cardTotal">—</p>
+        </div>
+        <a id="cardDocLink" href="#" target="_blank"
+           class="text-blue-200 hover:text-white text-xs underline">
+          📄 View Full Proposal →
+        </a>
+      </div>
+    </div>
+
+    <!-- ESIGN Act consent -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <h3 class="text-sm font-bold text-navy uppercase tracking-wide mb-3">Electronic Signature Consent</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs text-gray-600 leading-relaxed mb-4">
+        I agree to use an electronic signature for this agreement. I understand that my electronic
+        signature is legally equivalent to my handwritten signature under the Electronic Signatures
+        in Global and National Commerce Act (ESIGN Act, 15 U.S.C. § 7001) and constitutes my
+        acceptance of and agreement to the terms of this proposal. I acknowledge that I have been
+        given the opportunity to review the full proposal document before signing.
+      </div>
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" id="consentCheck" class="mt-0.5 w-5 h-5 rounded accent-forest flex-shrink-0">
+        <span class="text-sm text-gray-700">
+          I agree to sign electronically and accept the terms of
+          <strong id="consentEstRef">this proposal</strong>.
+        </span>
+      </label>
+    </div>
+
+    <!-- Initials canvas -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-navy uppercase tracking-wide">Initials</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Draw your initials</p>
+        </div>
+        <button onclick="Sign.clearInitials()"
+                class="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg px-3 py-1 hover:border-red-300 transition">
+          Clear
+        </button>
+      </div>
+      <div class="border-2 border-gray-200 rounded-lg bg-white overflow-hidden">
+        <canvas id="canvasInitials"></canvas>
+      </div>
+      <p class="text-xs text-gray-400 mt-1.5">Use your finger (mobile) or mouse (desktop)</p>
+    </div>
+
+    <!-- Signature canvas -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-navy uppercase tracking-wide">Full Signature</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Draw your complete signature</p>
+        </div>
+        <button onclick="Sign.clearSignature()"
+                class="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg px-3 py-1 hover:border-red-300 transition">
+          Clear
+        </button>
+      </div>
+      <div class="border-2 border-gray-200 rounded-lg bg-white overflow-hidden">
+        <canvas id="canvasSignature"></canvas>
+      </div>
+      <p class="text-xs text-gray-400 mt-1.5">Your signature is embedded in the final contract PDF</p>
+    </div>
+
+    <!-- Error -->
+    <div id="signError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"></div>
+
+    <!-- Submit -->
+    <div class="bg-forest rounded-2xl shadow p-5">
+      <button onclick="Sign.submit()" id="btnSign"
+              class="w-full bg-white text-forest font-bold py-4 rounded-xl text-base hover:bg-green-50 transition shadow">
+        ✍️ Sign &amp; Accept Proposal
+      </button>
+      <p class="text-center text-xs text-green-100 mt-2 opacity-80 leading-relaxed">
+        By clicking above you are electronically signing under the ESIGN Act (15 U.S.C. § 7001).
+        This is legally binding.
+      </p>
+    </div>
+
+  </div><!-- end viewSign -->
+
+  <!-- ── Processing ────────────────────────────────────────── -->
+  <div id="viewLoading" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
+      <div class="text-4xl mb-4 animate-spin inline-block">⏳</div>
+      <p class="text-gray-600 font-medium" id="loadingMsg">Processing your signature…</p>
+      <p class="text-gray-400 text-xs mt-2">This may take up to 30 seconds. Do not close this page.</p>
+    </div>
+  </div>
+
+  <!-- ── Success ────────────────────────────────────────────── -->
+  <div id="viewSuccess" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-green-200 p-8 text-center shadow-sm">
+      <div class="text-5xl mb-4">✅</div>
+      <h2 class="text-2xl font-bold text-forest mb-2">Signed Successfully!</h2>
+      <p class="text-gray-500 text-sm mb-1">Your signed proposal has been emailed to you.</p>
+      <p class="text-gray-400 text-xs mb-6" id="successEmailNote"></p>
+
+      <a id="signedPdfBtn" href="#" target="_blank"
+         class="block bg-forest text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-green-700 transition mb-4 text-center">
+        📄 Download Signed PDF
+      </a>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-left text-xs text-gray-500 space-y-1.5">
+        <p class="font-semibold text-gray-600 mb-1">What happens next?</p>
+        <p>• The contractor will contact you to schedule your roof replacement</p>
+        <p>• Keep your signed PDF for your records</p>
+        <p>• Questions? Contact the contractor directly</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ JAVASCRIPT ═════════════════════════════════════════════ -->
+<script>
+// ── Canvas module ──────────────────────────────────────────────
+const Canvas = (function() {
+  const cvs = {};
+
+  function setup(id) {
+    const el  = document.getElementById(id);
+    if (!el) return;
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = el.getBoundingClientRect();
+
+    el.width  = rect.width  * dpr;
+    el.height = rect.height * dpr;
+
+    const ctx = el.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // White fill so toDataURL exports a clean white-background PNG
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.strokeStyle = '#0d2240';
+
+    cvs[id] = { el, ctx, drawing: false, hasDrawn: false };
+    bind(id);
+  }
+
+  function pos(el, src) {
+    const r = el.getBoundingClientRect();
+    const e = src.touches ? src.touches[0] : src;
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function bind(id) {
+    const { el, ctx } = cvs[id];
+
+    el.addEventListener('mousedown', function(e) {
+      cvs[id].drawing = true;
+      const p = pos(el, e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    });
+    el.addEventListener('mousemove', function(e) {
+      if (!cvs[id].drawing) return;
+      const p = pos(el, e); ctx.lineTo(p.x, p.y); ctx.stroke();
+      cvs[id].hasDrawn = true;
+    });
+    el.addEventListener('mouseup',    function() { cvs[id].drawing = false; });
+    el.addEventListener('mouseleave', function() { cvs[id].drawing = false; });
+
+    // Touch events — passive:false required to call preventDefault
+    // (prevents page scroll while drawing, per spec requirement)
+    el.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      cvs[id].drawing = true;
+      const p = pos(el, e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    }, { passive: false });
+    el.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      if (!cvs[id].drawing) return;
+      const p = pos(el, e); ctx.lineTo(p.x, p.y); ctx.stroke();
+      cvs[id].hasDrawn = true;
+    }, { passive: false });
+    el.addEventListener('touchend', function(e) {
+      e.preventDefault(); cvs[id].drawing = false;
+    }, { passive: false });
+  }
+
+  function clear(id) {
+    if (!cvs[id]) return;
+    const { el, ctx } = cvs[id];
+    const rect = el.getBoundingClientRect();
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.strokeStyle = '#0d2240';
+    cvs[id].hasDrawn = false;
+  }
+
+  return {
+    setup,
+    clear,
+    isEmpty:  function(id) { return !cvs[id] || !cvs[id].hasDrawn; },
+    toDataUrl:function(id) { return cvs[id] ? cvs[id].el.toDataURL('image/png') : null; },
+  };
+})();
+
+// ── Non-blocking IP capture (advisory only — never blocks signing) ──
+let _signerIp = '';
+fetch('https://api.ipify.org?format=json')
+  .then(function(r) { return r.json(); })
+  .then(function(d) { _signerIp = d.ip || ''; })
+  .catch(function()  { /* IP capture failed — signing continues regardless */ });
+
+// ── Main Sign module ───────────────────────────────────────────
+const Sign = (function() {
+  let token      = '';
+  let proposalData = {};  // filled after KBA
+  let authAttempts = 0;
+  const MAX_AUTH_ATTEMPTS = 3;
+  let timeoutId  = null;
+
+  function init() {
+    const boot = PAGE_DATA || {};
+    document.getElementById('hdrCompany').textContent = boot.companyName || 'Roofing Proposals';
+
+    // Read signing token from URL — it was never injected into the page source
+    try {
+      token = new URLSearchParams(window.location.search).get('sign') || '';
+    } catch(e) {}
+
+    if (!boot.valid || !token) {
+      show('viewInvalid');
+      return;
+    }
+
+    // Valid token — show email auth step first.
+    // No proposal data is displayed yet.
+    show('viewAuth');
+    setTimeout(function() {
+      var el = document.getElementById('authEmail');
+      if (el) el.focus();
+    }, 100);
+  }
+
+  // ── Step 1: Email KBA ──────────────────────────────────────
+  function verifyEmail() {
+    if (authAttempts >= MAX_AUTH_ATTEMPTS) {
+      showAuthError('Too many failed attempts. Please contact the contractor for assistance.');
+      document.getElementById('btnVerify').disabled = true;
+      return;
+    }
+
+    const email = (document.getElementById('authEmail').value || '').trim();
+    if (!email) { showAuthError('Please enter your email address.'); return; }
+
+    authAttempts++;
+    clearAuthError();
+
+    const btn = document.getElementById('btnVerify');
+    btn.textContent = 'Verifying…'; btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(onVerified)
+      .withFailureHandler(function(err) {
+        btn.textContent = 'Verify Access →'; btn.disabled = false;
+        showAuthError('Verification error: ' + (err.message || 'Please try again.'));
+      })
+      .verifyClientAccess(token, email);
+  }
+
+  function onVerified(result) {
+    const btn = document.getElementById('btnVerify');
+    btn.textContent = 'Verify Access →'; btn.disabled = false;
+
+    if (!result || !result.success) {
+      showAuthError(result.error || 'Verification failed. Please check your email and try again.');
+      if (authAttempts >= 2) {
+        document.getElementById('authAttemptsWarning').classList.remove('hidden');
+      }
+      return;
+    }
+
+    // KBA passed — reveal the proposal data and signing form
+    proposalData = result;
+
+    if (result.alreadySigned) {
+      show('viewAlreadySigned');
+      if (result.signedPdfUrl) {
+        document.getElementById('alreadySignedPdfLink').href = result.signedPdfUrl;
+      } else {
+        document.getElementById('alreadySignedPdfLink').classList.add('hidden');
+      }
+      return;
+    }
+
+    // Populate proposal summary
+    document.getElementById('cardEstNum').textContent     = result.estimateNum || '—';
+    document.getElementById('cardClientName').textContent = 'Prepared for: ' + (result.clientName || '');
+    document.getElementById('cardTotal').textContent      = '$' + Number(result.total || 0).toLocaleString();
+    document.getElementById('consentEstRef').textContent  = 'Estimate ' + (result.estimateNum || '');
+
+    const docLink = document.getElementById('cardDocLink');
+    if (result.docUrl) { docLink.href = result.docUrl; }
+    else { docLink.style.display = 'none'; }
+
+    show('viewSign');
+
+    // Initialise canvases after the view is visible
+    requestAnimationFrame(function() {
+      Canvas.setup('canvasInitials');
+      Canvas.setup('canvasSignature');
+    });
+  }
+
+  // ── Step 2: Submit signature ───────────────────────────────
+  function submit() {
+    if (!document.getElementById('consentCheck').checked) {
+      showSignError('Please check the consent box to confirm you agree to sign electronically.');
+      return;
+    }
+    if (Canvas.isEmpty('canvasInitials')) {
+      showSignError('Please draw your initials in the Initials box.');
+      return;
+    }
+    if (Canvas.isEmpty('canvasSignature')) {
+      showSignError('Please draw your signature in the Signature box.');
+      return;
+    }
+
+    clearSignError();
+    show('viewLoading');
+
+    // Timeout warning at 30 seconds
+    timeoutId = setTimeout(function() {
+      var msg = document.getElementById('loadingMsg');
+      if (msg) msg.textContent = 'Still processing — almost done. Do not close this page.';
+    }, 30000);
+
+    const payload = {
+      token:     token,
+      consent:   true,
+      initials:  Canvas.toDataUrl('canvasInitials'),
+      signature: Canvas.toDataUrl('canvasSignature'),
+      signerIp:  _signerIp,
+      signerUa:  navigator.userAgent,
+    };
+
+    google.script.run
+      .withSuccessHandler(onSigned)
+      .withFailureHandler(function(err) {
+        clearTimeout(timeoutId);
+        show('viewSign');
+        showSignError('Signing failed: ' + (err.message || 'Unknown error. Please try again.'));
+      })
+      .submitSignature(payload);
+  }
+
+  function onSigned(result) {
+    clearTimeout(timeoutId);
+    if (result && result.error) {
+      show('viewSign');
+      showSignError(result.error);
+      return;
+    }
+    show('viewSuccess');
+    document.getElementById('successEmailNote').textContent =
+      'A copy was sent to ' + (proposalData.clientEmail || 'your email address') + '.';
+    if (result && result.signedPdfUrl) {
+      document.getElementById('signedPdfBtn').href = result.signedPdfUrl;
+    } else {
+      document.getElementById('signedPdfBtn').style.display = 'none';
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function show(id) {
+    ['viewInvalid','viewAuth','viewAlreadySigned','viewSign','viewLoading','viewSuccess']
+      .forEach(function(v) { document.getElementById(v).classList.add('hidden'); });
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function showAuthError(msg) {
+    var el = document.getElementById('authError');
+    el.textContent = msg; el.classList.remove('hidden');
+  }
+  function clearAuthError() {
+    document.getElementById('authError').classList.add('hidden');
+  }
+  function showSignError(msg) {
+    var el = document.getElementById('signError');
+    el.textContent = msg; el.classList.remove('hidden');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function clearSignError() {
+    document.getElementById('signError').classList.add('hidden');
+  }
+
+  function clearInitials()  { Canvas.clear('canvasInitials');  }
+  function clearSignature() { Canvas.clear('canvasSignature'); }
+
+  return { init, verifyEmail, submit, clearInitials, clearSignature };
+})();
+
+document.addEventListener('DOMContentLoaded', Sign.init);
+</script>
+</body>
+</html>
