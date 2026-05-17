@@ -1040,6 +1040,9 @@ confirmInvoice: function() {
       } else {
         App.closeInvoiceModal();
         App.loadLeads();
+        var msg = '✅ Invoice ' + r.invoiceNum + ' created.';
+        msg += r.emailSent ? '\n📧 Invoice emailed to client.' : '\n⚠️ Invoice saved but email could not be sent.';
+        alert(msg);
       }
     })
     .withFailureHandler(function(e) {

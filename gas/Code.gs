@@ -580,7 +580,17 @@ function generateInvoiceFromRow(rowId) {
   var pdfUrl  = pdfFile.getUrl();
   sheet.getRange(rowId, C.STATUS,      1, 1).setValue('Invoiced');
   sheet.getRange(rowId, C.INVOICE_URL, 1, 1).setValue(pdfUrl);
-  return { success: true, pdfUrl: pdfUrl, docUrl: result.docUrl, invoiceNum: invoiceNum };
+
+  // Email invoice to client and notify contractor
+  var emailSent = false;
+  if (payload.clientEmail) {
+    try {
+      sendInvoiceEmail_(payload, estimateNum, invoiceNum, result.pdfBlob, cfg);
+      emailSent = true;
+    } catch(e) { Logger.log('Invoice email failed: ' + e.message); }
+  }
+
+  return { success: true, pdfUrl: pdfUrl, docUrl: result.docUrl, invoiceNum: invoiceNum, emailSent: emailSent };
 }
 
 function invoiceSelectedRow() {
@@ -1115,6 +1125,43 @@ function sendSignedEmail_(p, pdfBlob, cfg) {
     try { GmailApp.sendEmail(p.clientEmail, 'Your Signed Roof Proposal — ' + cfg.COMPANY_NAME, bodyText,
       { htmlBody: html2, attachments: atts, name: cfg.COMPANY_NAME, replyTo: cfg.COMPANY_EMAIL }); }
     catch(e) { Logger.log('Client signed email failed: ' + e.message); }
+  }
+}
+
+function sendInvoiceEmail_(p, estimateNum, invoiceNum, pdfBlob, cfg) {
+  var totalFmt = '$' + Number(p.total||0).toLocaleString();
+  var pdfName  = 'Invoice_' + invoiceNum + '_' + (p.clientName||'Client').replace(/[^a-zA-Z0-9]/g,'_') + '.pdf';
+  if (pdfBlob) pdfBlob.setName(pdfName);
+  var atts = pdfBlob ? [pdfBlob] : [];
+
+  // Email to client
+  if (p.clientEmail) {
+    var html =
+      '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">' +
+      '<div style="background:#0d2240;padding:20px;text-align:center;">' +
+        '<h1 style="color:white;margin:0;">' + cfg.COMPANY_NAME + '</h1>' +
+        (cfg.COMPANY_PHONE ? '<p style="color:#aac4ff;margin:6px 0 0;font-size:14px;">' + cfg.COMPANY_PHONE + '</p>' : '') +
+      '</div>' +
+      '<div style="padding:24px;background:#f9f9f9;">' +
+        '<p style="color:#333;">Dear ' + (p.clientName||'Customer') + ',</p>' +
+        '<p style="color:#555;">Thank you for choosing ' + cfg.COMPANY_NAME + '. Please find your invoice attached.</p>' +
+        '<div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin:16px 0;">' +
+          '<p style="margin:4px 0;color:#555;font-size:13px;">Invoice #: <strong>' + invoiceNum + '</strong></p>' +
+          '<p style="margin:4px 0;color:#555;font-size:13px;">Related Estimate: <strong>' + estimateNum + '</strong></p>' +
+          '<p style="margin:12px 0 4px;font-size:28px;font-weight:800;color:#2e7d32;">' + totalFmt + '</p>' +
+          '<p style="margin:0;color:#888;font-size:11px;">Due upon completion</p>' +
+        '</div>' +
+        '<p style="color:#888;font-size:12px;">Questions? Contact us at ' + (cfg.COMPANY_PHONE || cfg.COMPANY_EMAIL || '') + '</p>' +
+      '</div></div>';
+    GmailApp.sendEmail(p.clientEmail, 'Invoice ' + invoiceNum + ' — ' + cfg.COMPANY_NAME, '',
+      { htmlBody: html, attachments: atts, name: cfg.COMPANY_NAME, replyTo: cfg.COMPANY_EMAIL });
+  }
+
+  // Notify contractor
+  if (cfg.COMPANY_EMAIL && cfg.COMPANY_EMAIL !== (p.clientEmail||'').toLowerCase().trim()) {
+    GmailApp.sendEmail(cfg.COMPANY_EMAIL, '🧾 Invoice sent — ' + invoiceNum + ' · ' + (p.clientName||''),
+      'Invoice ' + invoiceNum + ' (' + totalFmt + ') emailed to ' + (p.clientEmail||'client') + '.\nRelated estimate: ' + estimateNum,
+      { attachments: atts, name: cfg.COMPANY_NAME });
   }
 }
 
