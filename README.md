@@ -161,25 +161,7 @@ This grants the script access to Sheets, Docs, Drive, and Gmail.
 
 ---
 
-### Step 6 — Save the Web App URL as a Script Property
-
-This is the step most people miss. Run this **once** in the Apps Script editor after each deployment:
-
-```javascript
-function saveWebAppUrl() {
-  PropertiesService.getScriptProperties().setProperty(
-    'WEBAPP_URL',
-    'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec'
-  );
-  Logger.log('Saved: ' + PropertiesService.getScriptProperties().getProperty('WEBAPP_URL'));
-}
-```
-
-**Why this matters:** `ScriptApp.getService().getUrl()` returns different values depending on context — in the editor it returns the `/dev` URL (owner-only), and when a logged-in owner visits the web app, Google may redirect to a user-specific `/u/1/s/...` URL that returns 404 for clients. Storing the canonical URL explicitly in Script Properties avoids both problems. All signing links in emails will use this URL.
-
----
-
-### Step 7 — First-run setup in the app
+### Step 6 — First-run setup in the app
 
 1. Open the Web App URL in your browser
 2. Enter **default PIN: `4766`**
@@ -193,7 +175,7 @@ The system automatically creates in your Drive:
 
 ---
 
-### Step 8 — Add your Sheet ID to Settings
+### Step 7 — Add your Sheet ID to Settings
 
 1. In the app, open the **Settings tab**
 2. Paste your Sheet ID (from Step 1) into the **Google Sheet ID** field
@@ -275,9 +257,9 @@ clasp push --force
 
 # 2. In Apps Script editor:
 #    Deploy → Manage deployments → Edit → New version → Deploy
-
-# 3. If the deployment ID changed, update WEBAPP_URL:
-#    Run saveWebAppUrl() in the editor with the new URL
+#
+# That's it. Signing links auto-detect the correct deployment URL.
+# No manual URL configuration needed.
 ```
 
 ---
@@ -339,7 +321,7 @@ The SHA-256 hash is locked at proposal creation. If you edit the Doc later, the 
 ## Troubleshooting
 
 **"Invalid or Expired Link"**
-Token not found in Leads sheet. Check that the proposal was saved (Leads tab has a row), SHEET_ID is set in Settings, and WEBAPP_URL matches the current deployment.
+Token not found in Leads sheet. Check that the proposal was saved (Leads tab has a row) and SHEET_ID is set in Settings.
 
 **Signing works in incognito, not in regular browser**
 You are the script owner. Normal behavior. Real customers are unaffected. Use incognito for testing.
@@ -354,7 +336,7 @@ Gmail quota hit or invalid email. The signing link still works — find the toke
 Create a new deployment version. See "After every code update" above.
 
 **Signing email has wrong deployment URL**
-WEBAPP_URL script property points to an old deployment. Run `saveWebAppUrl()` with the current URL.
+You submitted the proposal while accessing the app via an old deployment URL. The signing link always matches whichever `/exec` URL you used to open the contractor app. Make sure you're always using the latest deployment URL.
 
 ---
 
